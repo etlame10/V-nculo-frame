@@ -2,20 +2,19 @@
 
 Genera paisajes sintéticos (degradados y formas) en distintas proporciones
 y los registra en el almacenamiento local con remitentes inventados,
-usando el mismo camino que usará la recepción real: ``media.save_photo``
-y ``LocalStore.add_photo``.
+usando el mismo camino que usará la recepción real: ``PhotoLibrary.add``
+(validación, límite de espacio, guardado atómico y registro).
 """
 
 from __future__ import annotations
 
 import io
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from ..media import save_photo
-from ..storage import LocalStore, Photo
+from ..library import PhotoLibrary
+from ..storage import Photo
 
 DEMO_SENDER_PREFIX = "demo-"
 
@@ -60,12 +59,10 @@ def _broken_jpeg() -> bytes:
 
 
 def create_demo_photos(
-    store: LocalStore,
-    photos_dir: Path,
+    library: PhotoLibrary,
     now: datetime,
     count: int = len(_SCENES),
     with_broken: bool = False,
-    max_bytes: int = 10 * 1024 * 1024,
 ) -> list[Photo]:
     """Crea hasta ``count`` fotos ficticias (una por día hacia atrás desde ``now``)."""
     if not 1 <= count <= len(_SCENES):
@@ -80,12 +77,9 @@ def create_demo_photos(
 
     created = []
     for days_ago, (name, data) in enumerate(items):
-        saved = save_photo(photos_dir, data, max_bytes)
         created.append(
-            store.add_photo(
-                sha256=saved.sha256,
-                file_name=saved.path.name,
-                mime=saved.image_type.mime,
+            library.add(
+                data,
                 sender_id=f"{DEMO_SENDER_PREFIX}{days_ago}",
                 sender_name=name,
                 received_at=now - timedelta(days=days_ago, hours=days_ago * 3),

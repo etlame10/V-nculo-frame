@@ -7,7 +7,7 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 > El SOS es una función complementaria. **No** es un servicio certificado de
 > emergencias ni sustituye al 112 ni a la teleasistencia.
 
-## Estado actual (fase 2: galería local)
+## Estado actual (fase 3: persistencia local)
 
 | Componente | Estado |
 |---|---|
@@ -18,6 +18,8 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 | Validación y guardado de fotografías (`media.py`) | Implementado y probado (solo firma y tamaño) |
 | Galería: rotación, bienvenida, errores de lectura, varias resoluciones (`gallery/`) | Implementado y probado **en simulación** |
 | Fotos ficticias y vista previa en PNG | Implementado y probado |
+| Biblioteca de fotos: borrado seguro, límite de espacio, conservación, integridad (`library.py`) | Implementado y probado |
+| Esquema v2 con migración transaccional y copia previa; estado de sincronización | Implementado y probado |
 | Supabase, Telegram, botones físicos, panel web | Pendiente (fases 4 a 8) |
 
 **Nada se ha ejecutado todavía en una Raspberry Pi ni en una pantalla física.**
@@ -63,6 +65,22 @@ python -m vinculo_frame gallery                     # pantalla completa
 python -m vinculo_frame check                       # estado de configuración y datos
 ```
 
+## Mantenimiento del almacenamiento local
+
+```bash
+python -m vinculo_frame storage            # espacio usado e integridad (código 3 si hay problemas)
+python -m vinculo_frame storage --deep     # además comprueba el contenido de cada foto
+python -m vinculo_frame storage --repair   # corrige solo lo seguro (ver docs/DECISIONES_TECNICAS.md, D-14)
+python -m vinculo_frame backup --out copia.sqlite3
+python -m vinculo_frame delete-photo --id 3 --yes
+```
+
+Límite de espacio: `VINCULO_STORAGE_LIMIT_MB` (2048 por defecto). Las fotos
+recibidas en los últimos `VINCULO_KEEP_RECENT_DAYS` días (30), las que tienen
+"me gusta" y las que no tienen copia remota nunca se retiran
+automáticamente. Hoy ninguna foto tiene copia remota, así que al llenarse el
+límite las fotos nuevas **se rechazan** en lugar de borrar nada.
+
 Teclas (solo para desarrollo): **Esc** o **Q** salir; **→** o **espacio**
 pasar a la siguiente foto. Opciones útiles de `gallery`: `--size ANCHOxALTO`,
 `--max-seconds N` y `--screenshot archivo.png`.
@@ -89,6 +107,9 @@ apagado del salvapantallas se resolverán en la fase 9.
 - Las fechas usan la hora del sistema; la Pi 4 no tiene reloj propio y, sin
   red tras un corte, la hora puede ser incorrecta (ver INVENTARIO_HARDWARE.md).
 - Sin transiciones entre fotos (decisión deliberada: evitar animaciones).
+- Hasta la fase 6 no hay copia remota: llegado el límite de espacio no se
+  libera nada automáticamente y las fotos nuevas se rechazan.
+- `storage --repair` es manual; ningún proceso lo ejecuta solo.
 
 ## Documentación
 

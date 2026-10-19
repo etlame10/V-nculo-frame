@@ -43,14 +43,31 @@ desde Claude en la nube.
   debe seguir usando solo la biblioteca estándar.
 - **HW:** ninguno para la lógica; la pantalla real para validar legibilidad.
 
-## 3. Persistencia local
-- **Objetivos:** completar `storage.py`: borrado de fotos (archivo + fila),
-  límite de espacio con política de retención, marca de sincronización,
-  migración v1→v2, copia de seguridad sencilla.
-- **Archivos:** `storage.py`, `media.py`, `tests/test_storage.py`.
-- **Aceptación:** migración desde una BD v1 conserva datos; corte simulado a
-  mitad de escritura no corrompe; al superar el límite se borran las más
-  antiguas ya sincronizadas, nunca las pendientes.
+## 3. Persistencia local — *completada (sin hardware)*
+- **Objetivos:** borrado seguro de fotos (archivo + fila), límite de espacio
+  con política de conservación explícita, estado de sincronización,
+  migración v1→v2 transaccional, integridad, reparación y copia de seguridad.
+- **Archivos:** `library.py` (nuevo: coordina archivos y filas, política
+  D-14), `storage.py` (migraciones D-13, columnas D-15, borrado y retirada
+  atómicos), `config.py`, `gallery/demo.py` (usa `PhotoLibrary.add`),
+  comandos `storage`, `backup` y `delete-photo`.
+- **Migración aplicada:** v1 → v2 añade `photos.remote_id` (único) y
+  `photos.evicted_at`. Copia previa automática `*.v1.bak`.
+- **Aceptación:**
+  - ✔ Migración desde una BD v1 (creada con el código real de la fase 1)
+    conserva fotos, "me gusta", avisos y SOS; un fallo a mitad de la
+    migración la deshace por completo y el siguiente arranque migra bien.
+  - ✔ Corte simulado al escribir (`os.replace` falla, interrupción antes
+    de registrar): no quedan archivos ni filas a medias.
+  - ✔ Al superar el límite solo se retiran fotos con copia remota, sin
+    "me gusta" y antiguas, de la más antigua a la más reciente; si no basta,
+    no se retira ninguna y la foto nueva se rechaza.
+  - ✔ Errores de disco, archivos ausentes, huérfanos, temporales, duplicados,
+    archivos dañados y base de datos corrupta: detectados y tratados sin
+    pérdidas evitables.
+  - ✔ Galería (fase 2) y SOS (fase 1) sin regresiones: 204 pruebas.
+- **Pendiente:** fijar el límite real según la tarjeta SD (inventario) y las
+  decisiones legales de D-12. La retirada automática no actuará hasta la fase 6.
 - **HW:** ninguno.
 
 ## 4. Supabase: esquema y permisos
@@ -81,8 +98,10 @@ desde Claude en la nube.
 - **Decisión previa:** D-05.
 
 ## 6. Sincronización y confirmaciones
-- **Objetivos:** `sync` descarga fotos nuevas; `dispatcher` vacía el outbox
-  (SOS, confirmaciones, "me gusta") con reintentos e idempotencia; recibir
+- **Objetivos:** `sync` descarga fotos nuevas y rellena `remote_id`
+  (`LocalStore.mark_synced`), sin volver a descargar las retiradas
+  (`evicted_at`); `dispatcher` vacía el outbox (SOS, confirmaciones,
+  "me gusta", `photo_deleted`) con reintentos e idempotencia; recibir
   confirmaciones SOS de familiares y aplicarlas a `SosService`.
 - **Archivos:** `sync.py`, `dispatcher.py`, `notifier.py` (interfaz +
   implementación Telegram), pruebas con dobles de red.

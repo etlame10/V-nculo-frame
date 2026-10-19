@@ -50,7 +50,8 @@ comunican a través de Supabase.
 | `config.py` | Leer y validar variables de entorno; ocultar secretos en `repr` | Hecho |
 | `sos.py` | Máquina de estados SOS pura: recibe eventos con tiempo monotónico y devuelve efectos | Hecho |
 | `sos_service.py` | Ejecuta efectos: alarma local inmediata y avisos al outbox | Hecho |
-| `storage.py` | SQLite local: fotos, outbox con reintentos, registro SOS | Hecho |
+| `storage.py` | SQLite local: fotos, outbox con reintentos, registro SOS, migraciones transaccionales | Hecho |
+| `library.py` | Coherencia archivo↔fila: altas, borrado, límite y conservación, integridad y reparación | Hecho |
 | `media.py` | Validación (firma, tamaño) y guardado atómico por hash | Hecho (básico) |
 | `gallery/playlist.py` | Orden de rotación, fotos nuevas primero, fotos que fallan (puro) | Hecho |
 | `gallery/controller.py` | Qué diapositiva mostrar y cuándo; convierte errores en avisos (puro) | Hecho |
@@ -95,6 +96,26 @@ LocalStore.list_photos ──► Playlist ──► GalleryController ──► 
 - La galería solo lee SQLite y la carpeta de fotos locales; no usa la red.
 - No hay segunda base de datos ni cambios de esquema.
 
+## Persistencia local (fase 3)
+
+```
+                     PhotoLibrary (library.py)
+  add(bytes) ──► validar ──► ¿cabe? ──no──► plan de retirada ──► ¿seguro y suficiente?
+                                │                                  │ no → StorageFullError
+                                │ sí                               │ sí → retirar archivos
+                                ▼                                  ▼       (evicted_at)
+                    save_photo (atómico) ──► fila en SQLite ── si falla, se borra el archivo
+```
+
+- Toda alta, borrado o retirada pasa por `PhotoLibrary`; nadie más escribe en
+  `data/photos/`.
+- Borrar = una transacción: se borra la fila, se borra el archivo y, si había
+  copia remota, se encola `photo_deleted`. Si el archivo no se puede borrar,
+  la transacción se deshace.
+- `check()` compara SQLite con la carpeta; `repair()` corrige solo lo seguro.
+- Esquema v2: `photos.remote_id` (sincronización) y `photos.evicted_at`
+  (archivo local retirado). Ver D-13 a D-15.
+
 ## Flujo de fotografías (previsto)
 
 1. Un familiar envía una foto al bot de Telegram.
@@ -113,7 +134,8 @@ Se concretará en la fase 4 como migración versionada en `supabase/migrations/`
 - `frames` (id, nombre, `device_user_id` → usuario Auth del marco)
 - `frame_admins` (frame_id, user_id) — quién gestiona cada marco
 - `family_members` (id, frame_id, display_name, telegram_user_id, active)
-- `photos` (id, frame_id, sender_member_id, storage_path, sha256, received_at, liked_at)
+- `photos` (id, frame_id, sender_member_id, storage_path, sha256, received_at, liked_at);
+  su `id` es el `remote_id` local
 - `sos_alerts` (id, frame_id, triggered_at, resolved_at, resolved_by)
 - `sos_acks` (alert_id, member_id, acked_at)
 

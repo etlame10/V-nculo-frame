@@ -23,6 +23,13 @@
   del remitente en rutas.
 - La galería solo abre archivos dentro de la carpeta de fotos: rechaza
   nombres con separadores, `..` o caracteres nulos (`gallery/imaging.py`).
+- Borrar o retirar una foto solo actúa sobre nombres con el formato que crea
+  el propio marco (`<sha256>.jpg|png|webp`); cualquier otro nombre en la base
+  de datos se rechaza sin tocar el disco (`library.py`).
+- Borrar una foto elimina fila y archivo en la misma transacción y, si había
+  copia remota, encola su borrado allí. Las copias `*.bak` de la base de datos
+  y `data/quarantine/` pueden conservar metadatos o fotos borradas: entran en
+  la política de retención pendiente (D-12).
 - Pendiente (fase 5): eliminar metadatos EXIF (puede incluir ubicación GPS)
   al recibir. La galería ya los usa solo para orientar la foto.
 

@@ -17,7 +17,10 @@ equipo). Las marcadas con ⚠ afectan a seguridad, coste o compatibilidad.
 | D-09 | Galería con pygame-ce (ventana) + Pillow (imagen), extra `[display]` | Adoptada ⚠ |
 | D-10 | `gpiozero` para los botones | Provisional |
 | D-11 | Alojamiento del panel web | Pendiente ⚠ |
-| D-12 | Retención y borrado de fotografías y datos personales | Pendiente ⚠ |
+| D-12 | Retención y borrado de fotografías y datos personales | Pendiente ⚠ (parte técnica en D-14) |
+| D-13 | Migraciones numeradas, transaccionales y con copia previa | Adoptada ⚠ |
+| D-14 | Política de conservación: solo se retiran fotos recuperables | Adoptada ⚠ |
+| D-15 | Estado de sincronización con dos columnas (`remote_id`, `evicted_at`) | Adoptada |
 
 ## D-01 Python ≥ 3.11, núcleo sin dependencias
 Raspberry Pi OS Bookworm trae Python 3.11 y Trixie 3.13; CI prueba ambas.
@@ -111,3 +114,59 @@ Se tratan fotografías y datos de personas identificables, incluida una
 persona mayor. Al ser un proyecto en contexto de empresa, conviene revisar las
 obligaciones de protección de datos (RGPD): base legal, consentimiento de los
 familiares, plazo de conservación y región del proyecto Supabase.
+
+En la fase 3 se implementó la parte técnica (borrado completo de fotos,
+límite de espacio y conservación, ver D-14). Siguen pendientes las
+decisiones legales: plazos concretos, quién puede pedir un borrado y cómo se
+propaga a la nube.
+
+## D-13 Migraciones transaccionales ⚠
+- Cada versión del esquema es una lista de sentencias en
+  `storage._MIGRATIONS`. Una migración publicada no se modifica: se añade otra.
+- Cada paso se ejecuta entre `BEGIN IMMEDIATE` y `COMMIT`, junto con el
+  cambio de `user_version`. Si algo falla, se deshace todo y la base de datos
+  queda en la versión anterior (probado con un fallo a mitad de un paso).
+- Se sustituyó `executescript`, que confirma la transacción en curso antes de
+  ejecutarse y por tanto no permitía deshacer una migración a medias.
+- Antes de migrar una base de datos existente se guarda
+  `vinculo.sqlite3.v<versión>.bak` con la API de copia de SQLite.
+- Una base de datos dañada o de una versión más nueva no se toca: se informa
+  del error y se detiene el arranque.
+- Compatibilidad: probada la migración de una base de datos creada por el
+  código real de la fase 1 (commit `877a094`).
+
+## D-14 Política de conservación ⚠
+Límite configurable (`VINCULO_STORAGE_LIMIT_MB`, 2048 por defecto) y reserva
+fija de 256 MB de disco libre para el sistema. Si una foto nueva no cabe, solo
+se retira el **archivo local** de fotos que cumplan las tres condiciones:
+1. tienen copia remota (se pueden recuperar);
+2. no tienen "me gusta";
+3. tienen más de `VINCULO_KEEP_RECENT_DAYS` días (30 por defecto).
+
+Se retiran las más antiguas primero; los metadatos se conservan. Las
+condiciones se comprueban dos veces: al planificar y en la propia sentencia
+SQL que retira la foto. Si lo retirable no basta, **no se retira nada**, la
+foto nueva se rechaza (`StorageFullError`) y una persona debe decidir.
+
+Consecuencia actual: como aún no hay sincronización, ninguna foto tiene copia
+remota y **nunca se retira nada automáticamente**; al llenarse el límite, las
+fotos nuevas se rechazan. Con el límite por defecto caben unas 680 fotos de
+3 MB. Valores a confirmar cuando se conozca la tarjeta SD (inventario).
+
+`storage --repair` es manual y conservador: los archivos sin fila van a
+`data/quarantine/` (no se borran), y se niega a actuar si parece una tarjeta o
+carpeta desmontada.
+
+## D-15 Estado de sincronización
+Dos columnas nuevas en `photos`, en lugar de tablas de sincronización:
+- `remote_id` (único, `NULL` = solo existe en el marco). Sirve a la vez de
+  estado y de enlace con la fila remota de Supabase (fase 6).
+- `evicted_at`: el archivo local se retiró por espacio o se perdió. La fila se
+  conserva para que la sincronización no lo vuelva a descargar en bucle y para
+  no perder estadísticas ni "me gusta". La galería no muestra estas fotos.
+
+Lo que sale del marco hacia la nube (borrados, "me gusta", SOS) sigue el
+outbox (D-03): borrar una foto con copia remota encola `photo_deleted` en la
+misma transacción. Descartado por ahora: marcas de tiempo de modificación o
+tablas de cambios, que solo harían falta con edición desde varios sitios.
+

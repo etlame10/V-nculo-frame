@@ -12,7 +12,7 @@ GitHub Actions (`.github/workflows/tests.yml`) ejecuta lo mismo en cada push
 y pull request, con Python 3.11 y 3.13. Sin el extra `[display]`, las pruebas
 de Pillow y pygame se omiten (`pytest.importorskip`) y el resto pasa.
 
-## Cobertura actual (fases 1 y 2)
+## Cobertura actual (fases 1 a 3)
 
 Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 
@@ -20,7 +20,9 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 |---|---|
 | `test_sos.py` | Pulsación corta sin efecto; activación por `tick` o por `release` tardío; rebotes y pulsaciones repetidas no crean alertas ni reinician el temporizador; confirmaciones duplicadas, tardías o de alertas desconocidas; resolución idempotente; nueva alerta con nuevo id; reloj que retrocede |
 | `test_sos_service.py` | Flujo completo sin Internet: alarma local inmediata, avisos que quedan en cola, registro de confirmaciones y resolución |
-| `test_storage.py` | Fotos idempotentes por hash, orden, "me gusta" una sola vez; outbox con reintentos y espera exponencial; persistencia al reabrir; rechazo de esquema más nuevo y de fechas sin zona horaria |
+| `test_storage.py` | Fotos idempotentes por hash, orden, "me gusta" una sola vez; outbox con reintentos y espera exponencial; persistencia al reabrir; rechazo de esquema más nuevo y de fechas sin zona horaria; `remote_id` único, retirada y restauración, borrado que se deshace si falla el archivo |
+| `test_storage_migrations.py` | BD nueva en v2 sin copia; v1→v2 conserva todo y guarda `.v1.bak`; no se repite; fallo a mitad de migración se deshace por completo (v1→v2 y v2→v3 ficticia) y el siguiente arranque funciona; BD corrupta o más nueva se rechaza sin tocarla; copia coherente |
+| `test_library.py` | Altas, duplicados (también con archivo perdido o retirado), foto rechazada, disco lleno al escribir, fallo de la BD tras escribir; borrado con y sin copia remota, archivo ausente, permiso denegado, nombre malicioso; límite, retirada de la más antigua, fotos protegidas (sin copia, con "me gusta", recientes), plan insuficiente, reserva de disco, doble comprobación en SQL; integridad (faltan, huérfanos, temporales, ajenos, dañados) y reparación conservadora con sus negativas |
 | `test_media.py` | Formatos admitidos y rechazados, tamaño máximo, guardado atómico e idempotente, sin restos tras rechazo |
 | `test_config.py` | Valores por defecto sin nube, validación de rangos y URL, secretos ocultos en `repr` |
 | `test_gallery_playlist.py` | Galería vacía, orden más reciente primero y vuelta, desempate por id, foto única, fotos nuevas prioritarias, foto actual o pendiente borrada, fotos que fallan y reintento |
@@ -30,7 +32,7 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 | `test_gallery_render.py` | Foto centrada en cuatro resoluciones y orientaciones, laterales desenfocados, texto del pie, pantallas de bienvenida y error, nombre muy largo |
 | `test_gallery_display.py` | Ventana con SDL sin pantalla: bienvenida, fallo de dibujo sin cerrarse, tamaño real, tecla Esc |
 | `test_gallery_app.py` | Fotos ficticias a través de `media` y `LocalStore`, idempotencia, vista previa, comandos `demo-photos`, `preview` y `gallery` |
-| `test_cli.py` | `check` crea el almacenamiento, no muestra secretos y devuelve error con configuración inválida |
+| `test_cli.py` | `check` crea el almacenamiento, no muestra secretos y devuelve error con configuración inválida; `storage` (informe, `--deep`, `--repair`), `backup`, `delete-photo` exige `--yes` |
 
 ## Estrategia por capas
 

@@ -4,8 +4,11 @@
 * ``gallery``: abre la galería (pantalla completa por defecto).
 * ``demo-photos``: crea fotos ficticias para probar la galería.
 * ``preview``: dibuja diapositivas como PNG, sin pantalla.
+* ``storage``: espacio usado e integridad; ``--repair`` corrige lo que es seguro.
+* ``backup``: copia coherente de la base de datos.
+* ``delete-photo``: borra una foto (archivo, fila y aviso a la nube).
 
-Los tres últimos necesitan el extra ``[display]`` (Pillow y pygame-ce).
+``gallery``, ``demo-photos`` y ``preview`` necesitan el extra ``[display]`` (Pillow y pygame-ce).
 """
 
 from __future__ import annotations
@@ -18,7 +21,8 @@ from pathlib import Path
 
 from . import __version__
 from .config import ConfigError, Settings, load_settings
-from .storage import LocalStore
+from .library import IntegrityReport, PhotoLibrary
+from .storage import LocalStore, StorageError
 
 
 def _settings() -> Settings | None:
@@ -76,15 +80,17 @@ def demo_photos(args: argparse.Namespace) -> int:
     settings = _settings()
     if settings is None:
         return 2
-    with LocalStore(settings.database_path) as store:
-        photos = create_demo_photos(
-            store,
-            settings.photos_dir,
-            datetime.now().astimezone(),
-            count=args.count,
-            with_broken=args.with_broken,
-            max_bytes=settings.max_photo_bytes,
-        )
+    try:
+        with LocalStore(settings.database_path) as store:
+            photos = create_demo_photos(
+                PhotoLibrary.from_settings(store, settings),
+                datetime.now().astimezone(),
+                count=args.count,
+                with_broken=args.with_broken,
+            )
+    except StorageError as exc:
+        print(f"No se han podido crear las fotos: {exc}", file=sys.stderr)
+        return 1
     print(f"{len(photos)} fotos ficticias en {settings.photos_dir.resolve()}")
     return 0
 
@@ -98,6 +104,93 @@ def preview(args: argparse.Namespace) -> int:
     paths = render_previews(settings, args.out, args.size, args.slides, datetime.now().astimezone())
     for path in paths:
         print(path)
+    return 0
+
+
+def _mb(n: int) -> str:
+    return f"{n / (1024 * 1024):.1f} MB"
+
+
+def storage(args: argparse.Namespace) -> int:
+    settings = _settings()
+    if settings is None:
+        return 2
+    try:
+        with LocalStore(settings.database_path) as store:
+            library = PhotoLibrary.from_settings(store, settings)
+            usage = library.usage()
+            report = library.check(deep=args.deep)
+            print(f"Esquema de la base de datos: v{store.schema_version}")
+            print(f"Espacio de fotos: {_mb(usage.photo_bytes)} de {_mb(usage.limit_bytes)}")
+            print(f"Disco libre:      {_mb(usage.disk_free_bytes)}")
+            print(f"Fotos en pantalla: {usage.displayable} (sin copia remota: {usage.unsynced})")
+            print(f"Fotos retiradas por espacio: {usage.evicted}; con 'me gusta': {usage.liked}")
+            _print_report(report)
+            if args.repair and not report.ok:
+                result = library.repair(report)
+                print(
+                    f"Reparado: {result.removed_rows} filas sin archivo borradas,"
+                    f" {result.evicted_rows} marcadas para recuperar,"
+                    f" {result.quarantined_files} archivos a {library.quarantine_dir},"
+                    f" {result.removed_temp_files} temporales borrados"
+                )
+                return 0
+    except (StorageError, OSError) as exc:
+        print(f"Error de almacenamiento: {exc}", file=sys.stderr)
+        return 1
+    return 0 if report.ok else 3
+
+
+def _print_report(report: IntegrityReport) -> None:
+    if report.ok and not report.unknown_files:
+        print("Integridad: correcta")
+        return
+    findings = [
+        ("Errores de SQLite", report.database_errors),
+        ("Fotos sin archivo", [p.id for p in report.missing_files]),
+        ("Archivos sin foto", [p.name for p in report.orphan_files]),
+        ("Temporales antiguos", [p.name for p in report.temp_files]),
+        ("Archivos dañados", [p.id for p in report.corrupted]),
+        ("Archivos ajenos (no se tocan)", [p.name for p in report.unknown_files]),
+    ]
+    if report.photos_dir_missing:
+        print("Integridad: NO se encuentra la carpeta de fotos")
+    for label, items in findings:
+        if items:
+            print(f"  {label}: {len(items)} → {', '.join(map(str, items[:5]))}")
+
+
+def backup(args: argparse.Namespace) -> int:
+    settings = _settings()
+    if settings is None:
+        return 2
+    try:
+        with LocalStore(settings.database_path) as store:
+            store.backup(args.out)
+    except (StorageError, OSError) as exc:
+        print(f"No se ha podido hacer la copia: {exc}", file=sys.stderr)
+        return 1
+    print(f"Copia guardada en {args.out}")
+    return 0
+
+
+def delete_photo(args: argparse.Namespace) -> int:
+    if not args.yes:
+        print("Borrar es irreversible para esta copia local. Repite con --yes.", file=sys.stderr)
+        return 2
+    settings = _settings()
+    if settings is None:
+        return 2
+    try:
+        with LocalStore(settings.database_path) as store:
+            photo = PhotoLibrary.from_settings(store, settings).delete(args.id)
+    except StorageError as exc:
+        print(f"No se ha podido borrar: {exc}", file=sys.stderr)
+        return 1
+    if photo is None:
+        print(f"No existe la foto {args.id}", file=sys.stderr)
+        return 1
+    print(f"Foto {photo.id} borrada")
     return 0
 
 
@@ -130,9 +223,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--size", type=_size, default=(1920, 1080), help="ANCHOxALTO")
     p.add_argument("--slides", type=int, default=3, help="número de diapositivas")
 
+    p = sub.add_parser("storage", help="espacio e integridad del almacenamiento local")
+    p.add_argument("--repair", action="store_true", help="corregir lo que es seguro corregir")
+    p.add_argument("--deep", action="store_true", help="comprobar el contenido de cada foto")
+
+    p = sub.add_parser("backup", help="copia de la base de datos local")
+    p.add_argument("--out", type=Path, required=True, help="archivo de destino")
+
+    p = sub.add_parser("delete-photo", help="borrar una foto")
+    p.add_argument("--id", type=int, required=True, help="identificador de la foto")
+    p.add_argument("--yes", action="store_true", help="confirmar el borrado")
+
     args = parser.parse_args(argv)
     commands = {"check": lambda _: check(), "gallery": gallery}
-    commands |= {"demo-photos": demo_photos, "preview": preview}
+    commands |= {"demo-photos": demo_photos, "preview": preview, "storage": storage}
+    commands |= {"backup": backup, "delete-photo": delete_photo}
     return commands[args.command](args)
 
 

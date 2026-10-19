@@ -23,6 +23,9 @@ probar la pantalla completa con `--max-seconds` y `--screenshot`.
   Pillow y pygame-ce solo en `gallery/{imaging,render,demo,display,app}.py` (extra `[display]`).
 - La lógica es pura y recibe reloj/ids inyectados; GPIO, red y pantalla van en adaptadores.
 - Todo aviso saliente pasa por el outbox de `LocalStore`. Nada local depende de la nube.
+- Altas, borrados y retiradas de fotos siempre a través de `PhotoLibrary` (`library.py`).
+- Migraciones: añadir un paso nuevo a `storage._MIGRATIONS`; nunca editar uno publicado.
+- Nunca borrar automáticamente fotos sin copia remota, con "me gusta" o recientes (D-14).
 - Nunca: secretos reales, fotografías reales, `service_role` en la Pi o el navegador,
   puertos abiertos en la Pi, migraciones remotas o mensajes reales sin autorización.
 - No inventar hardware: lo no confirmado en `docs/INVENTARIO_HARDWARE.md` no existe.

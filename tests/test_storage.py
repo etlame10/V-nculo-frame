@@ -127,3 +127,51 @@ def test_newer_schema_is_rejected(tmp_path):
         s._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION + 1}")
     with pytest.raises(StorageError):
         LocalStore(path)
+
+
+# --- Fase 3: estado de sincronización y ciclo de vida de las fotos --------
+
+
+def test_get_photo_and_by_sha(store):
+    photo = add(store)
+    assert store.get_photo(photo.id) == photo
+    assert store.get_photo_by_sha("a" * 64) == photo
+    assert store.get_photo(999) is None and store.get_photo_by_sha("z") is None
+
+
+def test_mark_synced(store):
+    photo = add(store)
+    assert not photo.is_synced
+    store.mark_synced(photo.id, "remoto-1")
+    assert store.get_photo(photo.id).remote_id == "remoto-1"
+
+
+def test_remote_id_cannot_be_shared_or_empty(store):
+    a, b = add(store, "a" * 64), add(store, "b" * 64)
+    store.mark_synced(a.id, "r1")
+    with pytest.raises(StorageError, match="otra foto"):
+        store.mark_synced(b.id, "r1")
+    with pytest.raises(StorageError):
+        store.mark_synced(b.id, "")
+    with pytest.raises(StorageError, match="no existe"):
+        store.mark_synced(999, "r2")
+
+
+def test_mark_file_missing_and_restore(store):
+    photo = add(store)
+    store.mark_file_missing(photo.id, T0)
+    assert store.list_photos() == []
+    assert store.get_photo(photo.id).evicted_at == T0
+    store.restore_photo(photo.id)
+    assert store.list_photos()[0].evicted_at is None
+
+
+def test_delete_photo_rolls_back_if_file_removal_fails(store):
+    photo = add(store)
+
+    def fail(_photo):
+        raise OSError("disco de solo lectura")
+
+    with pytest.raises(OSError):
+        store.delete_photo(photo.id, fail, T0)
+    assert store.get_photo(photo.id) == photo

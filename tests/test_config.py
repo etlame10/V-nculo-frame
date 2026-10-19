@@ -21,6 +21,8 @@ def test_reads_values():
             "VINCULO_SLIDE_SECONDS": "20",
             "VINCULO_SOS_HOLD_SECONDS": "3",
             "VINCULO_MAX_PHOTO_MB": "5",
+            "VINCULO_STORAGE_LIMIT_MB": "500",
+            "VINCULO_KEEP_RECENT_DAYS": "7",
             "VINCULO_LOG_LEVEL": "debug",
             "TELEGRAM_BOT_TOKEN": "123:abc",
             "SUPABASE_URL": "https://x.supabase.co",
@@ -33,6 +35,8 @@ def test_reads_values():
     assert s.slide_seconds == 20
     assert s.sos_hold_seconds == 3
     assert s.max_photo_bytes == 5 * 1024 * 1024
+    assert s.storage_limit_bytes == 500 * 1024 * 1024
+    assert s.keep_recent_days == 7
     assert s.log_level == "DEBUG"
     assert s.telegram_enabled and s.supabase_enabled
 
@@ -58,6 +62,8 @@ def test_secrets_are_not_in_repr():
         {"VINCULO_SOS_HOLD_SECONDS": "0.2"},
         {"VINCULO_SLIDE_SECONDS": "1"},
         {"VINCULO_MAX_PHOTO_MB": "500"},
+        {"VINCULO_STORAGE_LIMIT_MB": "10"},
+        {"VINCULO_KEEP_RECENT_DAYS": "0"},
         {"VINCULO_LOG_LEVEL": "VERBOSE"},
         {"SUPABASE_URL": "http://inseguro.example.com"},
     ],

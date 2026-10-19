@@ -26,6 +26,9 @@ class Settings:
     slide_seconds: float = 15.0
     sos_hold_seconds: float = 2.5
     max_photo_bytes: int = 10 * 1024 * 1024
+    # Espacio máximo para fotos locales y antigüedad mínima antes de poder retirar una.
+    storage_limit_bytes: int = 2048 * 1024 * 1024
+    keep_recent_days: int = 30
     log_level: str = "INFO"
     # repr=False evita que los secretos aparezcan en logs o trazas.
     telegram_bot_token: str | None = field(default=None, repr=False)
@@ -91,12 +94,16 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         raise ConfigError("SUPABASE_URL debe usar https://")
 
     max_photo_mb = _float(env, "VINCULO_MAX_PHOTO_MB", 10.0, 0.1, 50.0)
+    storage_limit_mb = _float(env, "VINCULO_STORAGE_LIMIT_MB", 2048.0, 50.0, 1_000_000.0)
+    keep_recent_days = _float(env, "VINCULO_KEEP_RECENT_DAYS", 30.0, 1.0, 3650.0)
 
     return Settings(
         data_dir=Path(_optional(env, "VINCULO_DATA_DIR") or "./data"),
         slide_seconds=_float(env, "VINCULO_SLIDE_SECONDS", 15.0, 3.0, 3600.0),
         sos_hold_seconds=_float(env, "VINCULO_SOS_HOLD_SECONDS", 2.5, 1.0, 10.0),
         max_photo_bytes=int(max_photo_mb * 1024 * 1024),
+        storage_limit_bytes=int(storage_limit_mb * 1024 * 1024),
+        keep_recent_days=int(keep_recent_days),
         log_level=log_level,
         telegram_bot_token=_optional(env, "TELEGRAM_BOT_TOKEN"),
         supabase_url=supabase_url,

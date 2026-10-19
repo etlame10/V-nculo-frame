@@ -9,6 +9,7 @@ from vinculo_frame.__main__ import main  # noqa: E402
 from vinculo_frame.config import load_settings  # noqa: E402
 from vinculo_frame.gallery.app import render_previews  # noqa: E402
 from vinculo_frame.gallery.demo import create_demo_photos  # noqa: E402
+from vinculo_frame.library import PhotoLibrary  # noqa: E402
 from vinculo_frame.storage import LocalStore  # noqa: E402
 
 NOW = datetime(2026, 10, 19, 10, 0, tzinfo=UTC)
@@ -21,7 +22,9 @@ def settings(tmp_path):
 
 def test_demo_photos_use_existing_storage(settings):
     with LocalStore(settings.database_path) as store:
-        photos = create_demo_photos(store, settings.photos_dir, NOW, count=3, with_broken=True)
+        photos = create_demo_photos(
+            PhotoLibrary.from_settings(store, settings), NOW, count=3, with_broken=True
+        )
         assert len(store.list_photos()) == 4
     assert all(p.sender_id.startswith("demo-") for p in photos)
     assert sorted(f.name for f in settings.photos_dir.iterdir()) == sorted(
@@ -31,14 +34,14 @@ def test_demo_photos_use_existing_storage(settings):
 
 def test_demo_photos_are_idempotent(settings):
     with LocalStore(settings.database_path) as store:
-        create_demo_photos(store, settings.photos_dir, NOW, count=2)
-        create_demo_photos(store, settings.photos_dir, NOW, count=2)
+        create_demo_photos(PhotoLibrary.from_settings(store, settings), NOW, count=2)
+        create_demo_photos(PhotoLibrary.from_settings(store, settings), NOW, count=2)
         assert len(store.list_photos()) == 2
 
 
 def test_demo_count_validated(settings):
     with LocalStore(settings.database_path) as store, pytest.raises(ValueError):
-        create_demo_photos(store, settings.photos_dir, NOW, count=0)
+        create_demo_photos(PhotoLibrary.from_settings(store, settings), NOW, count=0)
 
 
 def test_previews_cover_welcome_photos_and_broken(settings, tmp_path):
@@ -46,7 +49,9 @@ def test_previews_cover_welcome_photos_and_broken(settings, tmp_path):
     assert len(empty) == 1 and empty[0].exists()
 
     with LocalStore(settings.database_path) as store:
-        create_demo_photos(store, settings.photos_dir, NOW, count=2, with_broken=True)
+        create_demo_photos(
+            PhotoLibrary.from_settings(store, settings), NOW, count=2, with_broken=True
+        )
     paths = render_previews(settings, tmp_path / "out", (360, 640), 4, NOW)
     assert [p.name for p in paths] == [f"diapositiva-0{i}.png" for i in range(1, 5)]
 
