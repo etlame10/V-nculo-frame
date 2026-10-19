@@ -52,7 +52,13 @@ comunican a través de Supabase.
 | `sos_service.py` | Ejecuta efectos: alarma local inmediata y avisos al outbox | Hecho |
 | `storage.py` | SQLite local: fotos, outbox con reintentos, registro SOS | Hecho |
 | `media.py` | Validación (firma, tamaño) y guardado atómico por hash | Hecho (básico) |
-| `gallery` | Pase de fotos con fecha y remitente | Fase 2 |
+| `gallery/playlist.py` | Orden de rotación, fotos nuevas primero, fotos que fallan (puro) | Hecho |
+| `gallery/controller.py` | Qué diapositiva mostrar y cuándo; convierte errores en avisos (puro) | Hecho |
+| `gallery/captions.py`, `layout.py` | Textos en español y medidas según la pantalla (puro) | Hecho |
+| `gallery/imaging.py` | Lectura segura con Pillow: formatos, píxeles, orientación EXIF | Hecho |
+| `gallery/render.py` | Composición de cada diapositiva como imagen (Pillow) | Hecho |
+| `gallery/display.py` | Ventana a pantalla completa con pygame-ce | Hecho (sin probar en Pi) |
+| `gallery/demo.py` | Fotos ficticias para pruebas | Hecho |
 | `buttons` | Adaptador `gpiozero` → eventos `press/release/tick` | Fase 7 |
 | `dispatcher` | Envía avisos del outbox (Telegram/Supabase) con reintento | Fase 6 |
 | `sync` | Descarga fotos nuevas de Supabase Storage | Fase 6 |
@@ -73,6 +79,21 @@ comunican a través de Supabase.
    alarma y cierra la alerta. Los eventos repetidos o tardíos se ignoran.
 
 Estados: `IDLE → HOLDING → ALERTING → ACKNOWLEDGED → IDLE`.
+
+## Galería (fase 2)
+
+```
+LocalStore.list_photos ──► Playlist ──► GalleryController ──► Renderer (Pillow) ──► GalleryWindow (pygame)
+   (cada 30 s)              orden        diapositiva +          imagen RGB del           copia a la
+                                         carga (imaging)        tamaño de la pantalla    pantalla
+```
+
+- La lógica (`playlist`, `controller`, `captions`, `layout`) no importa
+  Pillow ni pygame: se prueba con dobles.
+- Tres tipos de diapositiva: foto, bienvenida (sin fotos) y "no se puede
+  mostrar" (8 s como máximo, y la foto se salta 5 min).
+- La galería solo lee SQLite y la carpeta de fotos locales; no usa la red.
+- No hay segunda base de datos ni cambios de esquema.
 
 ## Flujo de fotografías (previsto)
 

@@ -7,15 +7,20 @@ pendientes que no se deben tomar sin el equipo).
 ## Comandos
 
 ```bash
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,display]"
 ruff check . && ruff format --check .
-pytest
+SDL_VIDEODRIVER=dummy pytest
 ```
+
+Galería: `python -m vinculo_frame demo-photos --with-broken` y después
+`preview` (PNG, sin pantalla) o `gallery --windowed`. Bajo `xvfb-run` se puede
+probar la pantalla completa con `--max-seconds` y `--screenshot`.
 
 ## Reglas del proyecto
 
 - Idioma: documentación, mensajes y comentarios en español; identificadores en inglés.
 - El núcleo (`sos.py`, `storage.py`, `media.py`) usa solo la biblioteca estándar.
+  Pillow y pygame-ce solo en `gallery/{imaging,render,demo,display,app}.py` (extra `[display]`).
 - La lógica es pura y recibe reloj/ids inyectados; GPIO, red y pantalla van en adaptadores.
 - Todo aviso saliente pasa por el outbox de `LocalStore`. Nada local depende de la nube.
 - Nunca: secretos reales, fotografías reales, `service_role` en la Pi o el navegador,

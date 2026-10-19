@@ -21,15 +21,17 @@
   git. Las pruebas generan bytes sintéticos, nunca fotos reales.
 - Las fotos se guardan con nombre = SHA-256 del contenido, sin usar datos
   del remitente en rutas.
-- Pendiente (fase 2): eliminar metadatos EXIF (puede incluir ubicación GPS)
-  al recibir.
+- La galería solo abre archivos dentro de la carpeta de fotos: rechaza
+  nombres con separadores, `..` o caracteres nulos (`gallery/imaging.py`).
+- Pendiente (fase 5): eliminar metadatos EXIF (puede incluir ubicación GPS)
+  al recibir. La galería ya los usa solo para orientar la foto.
 
 ## Validación de entradas externas
 
 - Fotografías: tamaño máximo configurable y firma real de bytes (JPEG, PNG,
-  WebP); se rechaza el resto (`media.py`). En la fase 2 se añadirá
-  decodificación completa con límite de píxeles para evitar "bombas de
-  descompresión".
+  WebP); se rechaza el resto (`media.py`). Al mostrarlas, la galería vuelve
+  a validar con Pillow: solo esos formatos y un máximo de 40 megapíxeles
+  ("bombas de descompresión"); cualquier fallo se muestra como aviso.
 - Telegram (fase 5): solo se aceptan mensajes de `telegram_user_id`
   registrados y activos; webhook verificado con `secret_token`; los textos
   se tratan como datos, nunca como comandos privilegiados.

@@ -5,25 +5,42 @@ dependen del hardware, en la Pi con el resultado anotado). "HW" indica qué
 hardware hace falta; las fases sin hardware se pueden hacer íntegramente
 desde Claude en la nube.
 
-## 1. Preparación y arquitectura — *completada en esta sesión*
+## 1. Preparación y arquitectura — *completada*
 - **Objetivos:** estructura del repositorio, documentación, configuración,
   máquina SOS, almacenamiento local, CI.
 - **Archivos:** `pyproject.toml`, `.gitignore`, `.env.example`,
   `src/vinculo_frame/{config,sos,sos_service,storage,media,__main__}.py`,
   `tests/`, `docs/`, `.github/workflows/tests.yml`.
-- **Aceptación:** `ruff` y `pytest` en verde en Python 3.11 y 3.13. ✔ (local)
+- **Aceptación:** `ruff` y `pytest` en verde en Python 3.11 y 3.13. ✔ (local y GitHub Actions, commit `47b8ab7`)
 - **HW:** ninguno.
 
-## 2. Galería local
+## 2. Galería local — *completada en simulación; pendiente de validar en la Pi*
 - **Objetivos:** pase de fotos a pantalla completa desde `LocalStore`, con
-  fecha y nombre del remitente en letra grande; pantalla de "aún no hay
-  fotos"; limpieza de EXIF y redimensionado al recibir; elegir librería (D-09).
-- **Archivos:** `gallery/playlist.py` (orden y rotación, lógica pura),
-  `gallery/render.py` (dibujo), `media.py` (decodificación, EXIF, límite de
-  píxeles), extra opcional `[display]` en `pyproject.toml`.
-- **Aceptación:** pruebas de la lista de reproducción (orden, foto nueva
-  prioritaria, rotación, lista vacía); render a imagen en memoria en CI;
-  foto con EXIF GPS sale sin él; imagen de 20 000×20 000 rechazada.
+  fecha y nombre del remitente en letra grande; pantalla de bienvenida sin
+  fotos; aviso comprensible si una foto no se puede leer; adaptación a
+  resoluciones y orientaciones; fotos ficticias para probar.
+- **Tecnología (D-09):** pygame-ce para la ventana y Pillow para decodificar
+  y componer, en el extra opcional `[display]`.
+- **Archivos:** `gallery/playlist.py`, `gallery/controller.py`,
+  `gallery/captions.py`, `gallery/layout.py` (lógica pura);
+  `gallery/imaging.py`, `gallery/render.py`, `gallery/demo.py` (Pillow);
+  `gallery/display.py` (pygame); `gallery/app.py`; comandos `gallery`,
+  `demo-photos` y `preview` en `__main__.py`. Sin cambios en el esquema de
+  SQLite: se usa la tabla `photos` existente.
+- **Aceptación:**
+  - ✔ Orden de rotación (más reciente primero, vuelta al principio), foto
+    nueva prioritaria, foto borrada, galería vacía, fotos que fallan.
+  - ✔ Errores de lectura (archivo inexistente, truncado, formato no admitido,
+    nombre de archivo malicioso, imagen de demasiados píxeles) → aviso en
+    pantalla y la galería continúa; error de la base de datos → se siguen
+    mostrando las fotos ya cargadas.
+  - ✔ Orientación EXIF aplicada; dibujo correcto en 1920×1080, 1080×1920,
+    800×480 y 1024×600.
+  - ✔ Ventana probada con SDL sin pantalla y a pantalla completa en Xvfb.
+  - ✘ Pendiente: legibilidad y rendimiento en la pantalla real con la Pi 4.
+- **Cambio respecto al plan inicial:** la eliminación de EXIF y la
+  recompresión al recibir pasan a la fase 5 (recepción), porque `media.py`
+  debe seguir usando solo la biblioteca estándar.
 - **HW:** ninguno para la lógica; la pantalla real para validar legibilidad.
 
 ## 3. Persistencia local
@@ -53,6 +70,8 @@ desde Claude en la nube.
   al remitente; nada de Messenger.
 - **Archivos:** `supabase/functions/telegram-webhook/` o `src/vinculo_frame/telegram/`
   según D-05; pruebas con respuestas simuladas de la API.
+- **Incluye (movido desde la fase 2):** eliminar EXIF (ubicación GPS) y
+  reducir resolución al recibir cada foto.
 - **Aceptación:** remitente no registrado → rechazado sin almacenar; foto
   válida → fila + archivo; archivo no imagen o demasiado grande → rechazado;
   webhook sin `secret_token` correcto → 401; código de vinculación caducado o

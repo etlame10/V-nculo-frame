@@ -12,6 +12,8 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]
+# Galería en pantalla. Pillow >= 10.1 por ImageFont.load_default(size=...).
+display = ["pillow>=10.1", "pygame-ce>=2.4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

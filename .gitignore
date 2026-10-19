@@ -14,6 +14,8 @@ media/
 *.db-wal
 *.db-shm
 logs/
+# Salida de `python -m vinculo_frame preview`
+preview/
 *.log
 
 # Imágenes: nunca versionar fotografías reales.

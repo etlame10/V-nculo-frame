@@ -14,7 +14,7 @@ equipo). Las marcadas con ⚠ afectan a seguridad, coste o compatibilidad.
 | D-06 | El marco usa un usuario Supabase propio, nunca `service_role` | Adoptada ⚠ |
 | D-07 | Fotografías remotas en bucket privado de Supabase Storage | Provisional ⚠ |
 | D-08 | La alarma local sigue sonando tras la confirmación de un familiar | Pendiente |
-| D-09 | Biblioteca de pantalla para la galería | Pendiente ⚠ |
+| D-09 | Galería con pygame-ce (ventana) + Pillow (imagen), extra `[display]` | Adoptada ⚠ |
 | D-10 | `gpiozero` para los botones | Provisional |
 | D-11 | Alojamiento del panel web | Pendiente ⚠ |
 | D-12 | Retención y borrado de fotografías y datos personales | Pendiente ⚠ |
@@ -79,10 +79,22 @@ pendiente**, idealmente con la opinión de usuarios reales.
 También falta decidir cómo se resuelve localmente (¿la propia persona puede
 cancelar?, ¿un familiar presente?).
 
-## D-09 Pantalla ⚠
-Opciones: `pygame` (SDL2 sobre KMS/DRM, sin escritorio), Chromium en modo
-kiosco (HTML/CSS, más memoria), Tkinter. Depende de la pantalla real
-(resolución, si es táctil). Se decide en la fase 2 tras el inventario.
+## D-09 Pantalla: pygame-ce + Pillow ⚠
+Adoptada en la fase 2 tras comprobar en el entorno de desarrollo que ambas
+funcionan (SDL sin pantalla y Xvfb a pantalla completa).
+- **pygame-ce** (SDL2) abre una ventana a pantalla completa sin necesidad de
+  navegador; funciona con Wayland/X11 y, sin escritorio, con KMS/DRM. Consume
+  poca memoria y CPU, adecuado para una Pi 4.
+- **Pillow** decodifica (con reducción rápida para JPEG), aplica la
+  orientación EXIF, limita los píxeles y compone cada diapositiva. Al dibujar
+  en una imagen, las pruebas no necesitan pantalla.
+- Descartadas: Chromium en modo quiosco (más memoria y un servidor local
+  añadido) y Tkinter (no instalado en este entorno; peor control de pantalla
+  completa).
+- Compatibilidad: Pillow ≥ 10.1, por eso en la Pi se instala con `pip` en un
+  entorno virtual (el paquete `apt` de Bookworm es más antiguo). `pygame-ce`
+  y `pygame` no deben instalarse a la vez. **No verificado aún en una Pi.**
+- El núcleo sigue sin dependencias (D-01): ambas van en el extra `[display]`.
 
 ## D-10 GPIO
 `gpiozero` es la librería recomendada por Raspberry Pi y funciona en Pi 4 y

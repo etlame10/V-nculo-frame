@@ -21,10 +21,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Instalar dependencias
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev,display]"
       - name: Lint
         run: |
           ruff check .
           ruff format --check .
       - name: Pruebas
+        # Sin pantalla física: SDL usa su controlador vacío.
+        env:
+          SDL_VIDEODRIVER: dummy
         run: pytest
