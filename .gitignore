@@ -1,0 +1,52 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Datos locales del marco (fotografías familiares, base de datos, registros)
+data/
+photos/
+media/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+logs/
+*.log
+
+# Imágenes: nunca versionar fotografías reales.
+# Si en el futuro hacen falta recursos gráficos de la interfaz, añadirlos
+# explícitamente en assets/ui/ con una excepción "!assets/ui/**".
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.gif
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Supabase CLI local
+supabase/.temp/
+supabase/.branches/
+
+# Editores / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
