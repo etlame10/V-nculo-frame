@@ -21,8 +21,8 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 | `test_sos.py` | Pulsación corta sin efecto; activación por `tick` o por `release` tardío; rebotes y pulsaciones repetidas no crean alertas ni reinician el temporizador; confirmaciones duplicadas, tardías o de alertas desconocidas; resolución idempotente; nueva alerta con nuevo id; reloj que retrocede |
 | `test_sos_service.py` | Flujo completo sin Internet: alarma local inmediata, avisos que quedan en cola, registro de confirmaciones y resolución |
 | `test_storage.py` | Fotos idempotentes por hash, orden, "me gusta" una sola vez; outbox con reintentos y espera exponencial; persistencia al reabrir; rechazo de esquema más nuevo y de fechas sin zona horaria; `remote_id` único, retirada y restauración, borrado que se deshace si falla el archivo |
-| `test_storage_migrations.py` | BD nueva en v2 sin copia; v1→v2 conserva todo y guarda `.v1.bak`; no se repite; fallo a mitad de migración se deshace por completo (v1→v2 y v2→v3 ficticia) y el siguiente arranque funciona; BD corrupta o más nueva se rechaza sin tocarla; copia coherente |
-| `test_library.py` | Altas, duplicados (también con archivo perdido o retirado), foto rechazada, disco lleno al escribir, fallo de la BD tras escribir; borrado con y sin copia remota, archivo ausente, permiso denegado, nombre malicioso; límite, retirada de la más antigua, fotos protegidas (sin copia, con "me gusta", recientes), plan insuficiente, reserva de disco, doble comprobación en SQL; integridad (faltan, huérfanos, temporales, ajenos, dañados) y reparación conservadora con sus negativas |
+| `test_storage_migrations.py` | BD nueva en v2 sin copia; v1→v2 conserva todo y guarda `.v1.bak`; no se repite; fallo a mitad de migración se deshace por completo (v1→v2 y v2→v3 ficticia) y el siguiente arranque funciona; BD corrupta o más nueva se rechaza sin tocarla; copia previa imposible (disco lleno) detiene la migración; copia coherente |
+| `test_library.py` | Altas, duplicados (también con archivo perdido o retirado), foto rechazada, disco lleno al escribir, fallo de la BD tras escribir; borrado con y sin copia remota, archivo ausente, permiso denegado, nombre malicioso; límite, retirada de la más antigua, fotos protegidas (sin copia, con "me gusta", recientes), plan insuficiente, reserva de disco, doble comprobación en SQL; integridad (faltan, huérfanos, temporales, ajenos, dañados) y reparación conservadora con sus negativas (también con una sola foto), informe desactualizado, cuarentena que nunca sobrescribe, restauración fallida sin restos, error de disco al liberar espacio que se deshace |
 | `test_media.py` | Formatos admitidos y rechazados, tamaño máximo, guardado atómico e idempotente, sin restos tras rechazo |
 | `test_config.py` | Valores por defecto sin nube, validación de rangos y URL, secretos ocultos en `repr` |
 | `test_gallery_playlist.py` | Galería vacía, orden más reciente primero y vuelta, desempate por id, foto única, fotos nuevas prioritarias, foto actual o pendiente borrada, fotos que fallan y reintento |
@@ -31,8 +31,8 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 | `test_gallery_imaging.py` | JPEG/PNG/WebP, reducción, orientación EXIF, PNG transparente, archivos vacíos/dañados/truncados/inexistentes, límite de píxeles, nombres que intentan salir de la carpeta |
 | `test_gallery_render.py` | Foto centrada en cuatro resoluciones y orientaciones, laterales desenfocados, texto del pie, pantallas de bienvenida y error, nombre muy largo |
 | `test_gallery_display.py` | Ventana con SDL sin pantalla: bienvenida, fallo de dibujo sin cerrarse, tamaño real, tecla Esc |
-| `test_gallery_app.py` | Fotos ficticias a través de `media` y `LocalStore`, idempotencia, vista previa, comandos `demo-photos`, `preview` y `gallery` |
-| `test_cli.py` | `check` crea el almacenamiento, no muestra secretos y devuelve error con configuración inválida; `storage` (informe, `--deep`, `--repair`), `backup`, `delete-photo` exige `--yes` |
+| `test_gallery_app.py` | Fotos ficticias a través de `PhotoLibrary`, idempotencia, vista previa, comandos `demo-photos`, `preview` y `gallery` |
+| `test_cli.py` | `check` crea el almacenamiento, no muestra secretos y devuelve error con configuración inválida; `storage` (informe, `--deep`, `--repair` y su negativa ante un posible desmontaje), `backup` (también a un destino imposible), `delete-photo` exige `--yes`, `demo-photos --count` fuera de rango, base de datos dañada en todos los comandos sin modificarla |
 
 ## Estrategia por capas
 
@@ -53,6 +53,25 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 | Dibujo en varias resoluciones | Imágenes generadas y revisadas visualmente (vista previa PNG) |
 | Ventana y bucle | SDL `dummy` en las pruebas; pantalla completa en Xvfb 1024×600 |
 | **No comprobado** | Raspberry Pi 4, pantalla HDMI real, Wayland/KMS de Raspberry Pi OS, rendimiento y temperatura, legibilidad a distancia |
+
+### Fase 3: qué se ha comprobado y cómo
+
+| Comprobación | Resultado |
+|---|---|
+| Migración de bases v1 creadas por el código real de la fase 1 (`877a094`) | Datos conservados, `.v1.bak` legible, sin segunda copia al reabrir |
+| Fallo simulado a mitad de la migración | Vuelve a v1 sin columnas nuevas; el siguiente arranque migra bien |
+| Copia previa imposible (disco lleno simulado) | No migra y lo explica |
+| Comandos `storage`, `backup`, `delete-photo`, `demo-photos` con datos ficticios | Correctos, incluidos sus errores (sin trazas de Python) |
+| Errores de disco y cortes | **Simulados** (`os.replace`, `unlink` y la base de datos fallan a propósito); no probados con una tarjeta SD real ni cortando la luz |
+| Concurrencia | `BEGIN IMMEDIATE` al borrar y comprobación de nuevo en `repair`; **no** probado con varios procesos reales |
+
+Fallos encontrados en la revisión final y corregidos: `repair` con una sola
+foto ante un posible desmontaje; `repair` sobre un informe desactualizado;
+la cuarentena podía borrar un archivo con el mismo nombre; restauración
+fallida que dejaba un archivo suelto; errores de disco al liberar espacio
+como `OSError`; lectura fuera de la transacción al borrar; copia previa
+fallida mostrada como "base de datos dañada"; `demo-photos --count 9` con
+traza de Python; `*.bak` y la cuarentena fuera de `data/` sin ignorar en git.
 
 ### Lista para la primera prueba en la Pi (fase 2, pendiente)
 

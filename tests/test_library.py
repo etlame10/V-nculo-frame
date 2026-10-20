@@ -415,3 +415,81 @@ def test_interrupted_add_cleans_its_file(env, monkeypatch):
         env.add("a")
     # add() limpia su propio archivo incluso con KeyboardInterrupt.
     assert env.files() == []
+
+
+# --- Revisión final de la fase 3 --------------------------------------------
+
+
+def test_repair_refuses_when_the_only_photo_is_missing(env):
+    """Carpeta de montaje vacía con una sola foto: puede ser un desmontaje."""
+    photo = env.add("a")
+    env.path(photo).unlink()
+    with pytest.raises(StorageError, match="desmontado"):
+        env.library.repair(env.library.check())
+    assert env.store.get_photo(photo.id) is not None
+
+
+def test_repair_rechecks_a_stale_report(env):
+    keep, lost = env.add("a"), env.add("b")
+    orphan = env.photos_dir / ("f" * 64 + ".jpg")
+    orphan.write_bytes(jpeg("x"))
+    age(orphan)
+    env.path(lost).unlink()
+    report = env.library.check()
+    # Entre check y repair: el archivo perdido vuelve y el huérfano pasa a tener fila.
+    env.path(lost).write_bytes(jpeg("b"))
+    env.store.add_photo(
+        sha256="f" * 64,
+        file_name=orphan.name,
+        mime="image/jpeg",
+        sender_id="s",
+        sender_name="Ana",
+        received_at=NOW,
+    )
+    result = env.library.repair(report)
+    assert (result.removed_rows, result.quarantined_files) == (0, 0)
+    assert env.store.get_photo(lost.id) is not None and orphan.exists()
+    assert env.path(keep).exists()
+
+
+def test_quarantine_never_overwrites_or_deletes(env):
+    env.add("a")
+    env.library.quarantine_dir.mkdir(parents=True)
+    name = "f" * 64 + ".jpg"
+    (env.library.quarantine_dir / name).write_bytes(b"copia anterior")
+    orphan = env.photos_dir / name
+    orphan.write_bytes(b"otra version")
+    age(orphan)
+    env.library.repair(env.library.check())
+    contents = sorted(p.read_bytes() for p in env.library.quarantine_dir.iterdir())
+    assert contents == [b"copia anterior", b"otra version"]
+
+
+def test_failed_restore_of_evicted_photo_leaves_no_stray_file(env, monkeypatch):
+    photo = env.add("a", days_ago=100)
+    env.store.mark_synced(photo.id, "r1")
+    env.store.evict_photo(photo.id, lambda p: env.path(p).unlink(), NOW, NOW)
+
+    def broken(_photo_id):
+        raise StorageError("base de datos bloqueada")
+
+    monkeypatch.setattr(env.store, "restore_photo", broken)
+    with pytest.raises(StorageError):
+        env.add("a")
+    assert env.files() == []
+    assert env.library.check().ok
+
+
+def test_disk_error_while_freeing_space_is_a_storage_error(tmp_path, monkeypatch):
+    env = Env(tmp_path, limit=1500)
+    (old,) = fill(env, [("a", 100, True, False)])
+
+    def denied(self, missing_ok=False):
+        raise PermissionError("solo lectura")
+
+    monkeypatch.setattr(Path, "unlink", denied)
+    with pytest.raises(StorageError, match="solo lectura"):
+        env.add("b")
+    monkeypatch.undo()
+    assert env.store.get_photo(old.id).evicted_at is None  # la retirada se deshizo
+    assert env.path(old).exists() and len(env.files()) == 1

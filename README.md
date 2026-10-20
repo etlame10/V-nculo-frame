@@ -19,7 +19,7 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 | Galería: rotación, bienvenida, errores de lectura, varias resoluciones (`gallery/`) | Implementado y probado **en simulación** |
 | Fotos ficticias y vista previa en PNG | Implementado y probado |
 | Biblioteca de fotos: borrado seguro, límite de espacio, conservación, integridad (`library.py`) | Implementado y probado |
-| Esquema v2 con migración transaccional y copia previa; estado de sincronización | Implementado y probado |
+| Esquema v2 con migración transaccional y copia previa; estado de sincronización | Implementado y probado (migración real desde v1; errores de disco simulados) |
 | Supabase, Telegram, botones físicos, panel web | Pendiente (fases 4 a 8) |
 
 **Nada se ha ejecutado todavía en una Raspberry Pi ni en una pantalla física.**
@@ -110,6 +110,9 @@ apagado del salvapantallas se resolverán en la fase 9.
 - Hasta la fase 6 no hay copia remota: llegado el límite de espacio no se
   libera nada automáticamente y las fotos nuevas se rechazan.
 - `storage --repair` es manual; ningún proceso lo ejecuta solo.
+- Los fallos de disco y los cortes de luz se han probado **simulándolos**;
+  no con una tarjeta SD real. Tampoco se ha probado con varios procesos
+  escribiendo a la vez (lo habrá cuando exista la recepción de fotos).
 
 ## Documentación
 

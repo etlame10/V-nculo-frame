@@ -176,7 +176,11 @@ class PhotoLibrary:
         if existing is not None and existing.evicted_at is None and self._file(existing).is_file():
             return existing
 
-        self._make_room(len(data))
+        try:
+            self._make_room(len(data))
+        except OSError as exc:
+            # La retirada que falló se deshizo en su transacción.
+            raise StorageError(f"no se pudo liberar espacio en disco: {exc}") from exc
         try:
             saved = save_photo(self._photos_dir, data, self._max_photo_bytes)
         except OSError as exc:
@@ -198,8 +202,8 @@ class PhotoLibrary:
                 received_at=received_at,
             )
         except BaseException:
-            # Sin fila no debe quedar archivo (salvo que perteneciera a una fila existente).
-            if existing is None:
+            # El archivo nuevo solo se conserva si su fila ya lo esperaba (archivo perdido).
+            if existing is None or existing.evicted_at is not None:
                 saved.path.unlink(missing_ok=True)
             raise
 
@@ -291,7 +295,10 @@ class PhotoLibrary:
         orphans, temps, unknown, corrupted = [], [], [], []
         for name, entry in sorted(files.items()):
             path = Path(entry.path)
-            is_old = entry.stat().st_mtime < old_before
+            try:
+                is_old = entry.stat().st_mtime < old_before
+            except FileNotFoundError:
+                continue  # borrado mientras se revisaba
             if name in local:
                 if deep and _sha256(path) != local[name].sha256:
                     corrupted.append(local[name])
@@ -331,15 +338,20 @@ class PhotoLibrary:
         if report.photos_dir_missing and report.missing_files:
             raise StorageError("no se encuentra la carpeta de fotos; ¿tarjeta o disco desmontado?")
         displayable = len(self._store.list_photos())
-        if displayable > 1 and len(report.missing_files) == displayable:
+        if displayable > 0 and len(report.missing_files) >= displayable:
+            # Incluye el caso de una sola foto: una carpeta de montaje vacía se ve igual.
             raise StorageError(
                 "faltan los archivos de todas las fotos; ¿tarjeta o disco desmontado?"
                 " No se ha modificado nada"
             )
 
+        # El informe puede haberse quedado viejo: cada acción se vuelve a comprobar.
         now = self._clock()
         removed = evicted = 0
-        for photo in report.missing_files:
+        for stale in report.missing_files:
+            photo = self._store.get_photo(stale.id)
+            if photo is None or photo.evicted_at is not None or self._file(photo).exists():
+                continue
             if photo.is_synced:
                 self._store.mark_file_missing(photo.id, now)
                 evicted += 1
@@ -348,12 +360,17 @@ class PhotoLibrary:
 
         quarantined = 0
         for path in report.orphan_files:
+            owner = self._store.get_photo_by_sha(path.stem)
+            if not path.exists() or (owner is not None and owner.evicted_at is None):
+                continue
             self._quarantine_dir.mkdir(parents=True, exist_ok=True)
+            # Nunca se sobrescribe ni se borra nada en la cuarentena.
             target = self._quarantine_dir / path.name
-            if target.exists():
-                path.unlink(missing_ok=True)  # mismo nombre = mismo contenido (hash)
-            else:
-                os.replace(path, target)
+            counter = 1
+            while target.exists():
+                target = self._quarantine_dir / f"{path.name}.{counter}"
+                counter += 1
+            os.replace(path, target)
             quarantined += 1
 
         temps = 0
@@ -382,7 +399,14 @@ class PhotoLibrary:
     def _photo_bytes(self) -> int:
         if not self._photos_dir.is_dir():
             return 0
-        return sum(e.stat().st_size for e in os.scandir(self._photos_dir) if e.is_file())
+        total = 0
+        for entry in os.scandir(self._photos_dir):
+            try:
+                if entry.is_file():
+                    total += entry.stat().st_size
+            except FileNotFoundError:
+                pass  # borrado mientras se contaba
+        return total
 
     def _free_bytes(self) -> int:
         path = self._photos_dir

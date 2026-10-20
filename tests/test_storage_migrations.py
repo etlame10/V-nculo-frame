@@ -138,3 +138,16 @@ def test_backup_is_a_consistent_copy(tmp_path):
     with LocalStore(tmp_path / "copias" / "copia.sqlite3") as copy:
         assert copy.pending_count() == 1
     assert not list((tmp_path / "copias").glob("*.tmp"))
+
+
+def test_failed_pre_migration_backup_stops_without_migrating(tmp_path, monkeypatch):
+    path = tmp_path / "db.sqlite3"
+    make_v1_database(path)
+
+    def full_disk(self, dest):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(LocalStore, "backup", full_disk)
+    with pytest.raises(MigrationError, match="copia previa"):
+        LocalStore(path)
+    assert "remote_id" not in columns(path)

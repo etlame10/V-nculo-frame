@@ -1,3 +1,5 @@
+import pytest
+
 from vinculo_frame.__main__ import main
 
 
@@ -70,3 +72,40 @@ def test_delete_photo_requires_confirmation(tmp_path, monkeypatch, capsys):
     assert main(["delete-photo", "--id", str(photo.id), "--yes"]) == 0
     assert not (settings.photos_dir / photo.file_name).exists()
     assert main(["delete-photo", "--id", str(photo.id), "--yes"]) == 1
+
+
+@pytest.mark.parametrize("count", ["0", "9", "seis"])
+def test_demo_photos_rejects_bad_count_without_traceback(count, capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["demo-photos", "--count", count])
+    assert exc.value.code == 2
+    assert "--count" in capsys.readouterr().err
+
+
+def test_commands_report_a_damaged_database(tmp_path, monkeypatch, capsys):
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "vinculo.sqlite3").write_bytes(b"no es sqlite" * 100)
+    monkeypatch.setenv("VINCULO_DATA_DIR", str(data))
+    assert main(["storage"]) == 1
+    assert main(["backup", "--out", str(tmp_path / "c.sqlite3")]) == 1
+    assert main(["delete-photo", "--id", "1", "--yes"]) == 1
+    assert capsys.readouterr().err.count("dañada") == 3
+    assert (data / "vinculo.sqlite3").read_bytes() == b"no es sqlite" * 100
+
+
+def test_storage_repair_refuses_possible_unmount(tmp_path, monkeypatch, capsys):
+    settings, photos = _seed(tmp_path, monkeypatch)
+    for photo in photos:
+        (settings.photos_dir / photo.file_name).unlink()
+    assert main(["storage", "--repair"]) == 1
+    assert "desmontado" in capsys.readouterr().err
+    assert main(["storage"]) == 3  # nada se ha borrado: siguen faltando
+
+
+def test_backup_to_unwritable_place_fails_cleanly(tmp_path, monkeypatch, capsys):
+    _seed(tmp_path, monkeypatch)
+    blocker = tmp_path / "un-archivo"
+    blocker.write_text("x")
+    assert main(["backup", "--out", str(blocker / "copia.sqlite3")]) == 1
+    assert "No se ha podido hacer la copia" in capsys.readouterr().err

@@ -129,7 +129,8 @@ propaga a la nube.
 - Se sustituyó `executescript`, que confirma la transacción en curso antes de
   ejecutarse y por tanto no permitía deshacer una migración a medias.
 - Antes de migrar una base de datos existente se guarda
-  `vinculo.sqlite3.v<versión>.bak` con la API de copia de SQLite.
+  `vinculo.sqlite3.v<versión>.bak` con la API de copia de SQLite. Si la copia
+  no se puede hacer (por ejemplo, disco lleno), no se migra.
 - Una base de datos dañada o de una versión más nueva no se toca: se informa
   del error y se detiene el arranque.
 - Compatibilidad: probada la migración de una base de datos creada por el
@@ -154,8 +155,9 @@ fotos nuevas se rechazan. Con el límite por defecto caben unas 680 fotos de
 3 MB. Valores a confirmar cuando se conozca la tarjeta SD (inventario).
 
 `storage --repair` es manual y conservador: los archivos sin fila van a
-`data/quarantine/` (no se borran), y se niega a actuar si parece una tarjeta o
-carpeta desmontada.
+`data/quarantine/` (no se borran ni se sobrescriben), cada acción se vuelve a
+comprobar antes de hacerla, y se niega a actuar si parece una tarjeta o
+carpeta desmontada (faltan los archivos de todas las fotos, aunque sea una).
 
 ## D-15 Estado de sincronización
 Dos columnas nuevas en `photos`, en lugar de tablas de sincronización:

@@ -43,7 +43,7 @@ desde Claude en la nube.
   debe seguir usando solo la biblioteca estándar.
 - **HW:** ninguno para la lógica; la pantalla real para validar legibilidad.
 
-## 3. Persistencia local — *completada (sin hardware)*
+## 3. Persistencia local — *completada en simulación; pendiente de CI y de la Pi*
 - **Objetivos:** borrado seguro de fotos (archivo + fila), límite de espacio
   con política de conservación explícita, estado de sincronización,
   migración v1→v2 transaccional, integridad, reparación y copia de seguridad.
@@ -65,7 +65,13 @@ desde Claude en la nube.
   - ✔ Errores de disco, archivos ausentes, huérfanos, temporales, duplicados,
     archivos dañados y base de datos corrupta: detectados y tratados sin
     pérdidas evitables.
-  - ✔ Galería (fase 2) y SOS (fase 1) sin regresiones: 204 pruebas.
+  - ✔ Galería (fase 2) y SOS (fase 1) sin regresiones: 217 pruebas en
+    Python 3.11 y 3.13; galería a pantalla completa en Xvfb con datos
+    creados por `PhotoLibrary`.
+  - ✔ Revisión final: corregidos 9 fallos encontrados al revisar (ver
+    PRUEBAS.md), cada uno con su prueba.
+  - ✘ Sin probar: tarjeta SD real, cortes de luz reales, varios procesos
+    escribiendo a la vez y rendimiento de `storage --deep` en la Pi.
 - **Pendiente:** fijar el límite real según la tarjeta SD (inventario) y las
   decisiones legales de D-12. La retirada automática no actuará hasta la fase 6.
 - **HW:** ninguno.

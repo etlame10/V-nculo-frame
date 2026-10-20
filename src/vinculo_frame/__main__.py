@@ -194,6 +194,16 @@ def delete_photo(args: argparse.Namespace) -> int:
     return 0
 
 
+def _demo_count(text: str) -> int:
+    try:
+        value = int(text)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"no es un número: {text!r}") from exc
+    if not 1 <= value <= 6:
+        raise argparse.ArgumentTypeError("debe estar entre 1 y 6")
+    return value
+
+
 def _size(text: str) -> tuple[int, int]:
     from .gallery.layout import parse_size
 
@@ -215,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--screenshot", help="guardar la última imagen mostrada en este PNG")
 
     p = sub.add_parser("demo-photos", help="crear fotos ficticias de prueba")
-    p.add_argument("--count", type=int, default=6, help="número de fotos (1-6)")
+    p.add_argument("--count", type=_demo_count, default=6, help="número de fotos (1-6)")
     p.add_argument("--with-broken", action="store_true", help="añadir una foto dañada")
 
     p = sub.add_parser("preview", help="dibujar diapositivas como PNG, sin pantalla")

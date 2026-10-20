@@ -13,6 +13,10 @@ media/
 *.db-journal
 *.db-wal
 *.db-shm
+# Copias de seguridad y cuarentena del almacenamiento local
+*.bak
+*.sqlite3.tmp
+quarantine/
 logs/
 # Salida de `python -m vinculo_frame preview`
 preview/

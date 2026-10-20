@@ -155,7 +155,10 @@ class LocalStore:
         except sqlite3.DatabaseError as exc:
             self._conn.close()
             # No se borra ni se recrea: puede contener datos recuperables.
-            raise StorageError(f"la base de datos local está dañada o no es SQLite: {exc}") from exc
+            raise StorageError(
+                "no se puede abrir la base de datos local"
+                f" (dañada, bloqueada o no es SQLite): {exc}"
+            ) from exc
         except BaseException:
             self._conn.close()
             raise
@@ -186,7 +189,12 @@ class LocalStore:
         if version == target:
             return
         if version > 0 and self._path is not None:
-            self.backup(self._path.with_name(f"{self._path.name}.v{version}.bak"))
+            try:
+                self.backup(self._path.with_name(f"{self._path.name}.v{version}.bak"))
+            except (sqlite3.Error, OSError) as exc:
+                raise MigrationError(
+                    f"no se pudo hacer la copia previa a la migración ({exc}); no se ha migrado"
+                ) from exc
         for current in range(version, target):
             try:
                 # Sin executescript: confirma la transacción en curso y rompería la atomicidad.
@@ -295,6 +303,8 @@ class LocalStore:
         encola el aviso para borrarla también allí. Devuelve ``None`` si no existía.
         """
         with self._tx() as c:
+            # Bloqueo de escritura antes de leer: nadie puede sincronizarla entretanto.
+            c.execute("BEGIN IMMEDIATE")
             row = c.execute("SELECT * FROM photos WHERE id = ?", (photo_id,)).fetchone()
             if row is None:
                 return None

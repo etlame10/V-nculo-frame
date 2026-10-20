@@ -175,3 +175,15 @@ def test_delete_photo_rolls_back_if_file_removal_fails(store):
     with pytest.raises(OSError):
         store.delete_photo(photo.id, fail, T0)
     assert store.get_photo(photo.id) == photo
+
+
+def test_delete_of_synced_photo_queues_remote_deletion(store):
+    """El aviso a la nube se encola en la misma transacción que el borrado.
+
+    La carrera entre procesos (sincronizar justo antes de borrar) la evita
+    ``BEGIN IMMEDIATE``; esta prueba no la reproduce.
+    """
+    photo = add(store)
+    store.mark_synced(photo.id, "r1")
+    store.delete_photo(photo.id, lambda _p: None, T0)
+    assert [i.kind for i in store.due(T0)] == ["photo_deleted"]
