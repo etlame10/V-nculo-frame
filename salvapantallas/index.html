@@ -366,6 +366,32 @@
   }
   @keyframes auraSables { 0%, 22%, 100% { filter: none; } 50% { filter: brightness(1.6); } 72% { filter: brightness(2.2); } 78% { filter: brightness(3) saturate(1.6); } }
 
+  /* ---------- Firma ---------- */
+  #firma {
+    position: fixed; z-index: 6; left: 3vmin; bottom: 2.6vmin; pointer-events: none;
+    font-size: clamp(0.8rem, 2vmin, 1.3rem); letter-spacing: 0.22em; color: var(--amarillo);
+    text-shadow: 0 0 0.6vmin rgba(0, 0, 0, 0.9), 0 0 1.6vmin rgba(255, 232, 31, 0.45);
+  }
+  #firma span { color: var(--gris); font-style: italic; letter-spacing: 0.1em; margin-right: 0.3em; }
+
+  /* ---------- Superláser y explosión del planeta (entrada a los créditos) ---------- */
+  #superlaser { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+  .planeta { transition: opacity 2.5s ease; }
+  body.creditos #batalla { opacity: 0; }
+  body.boom #destello {
+    background: radial-gradient(circle at var(--bx, 20%) var(--by, 80%), #ffffff 0%, #fff6dc 25%, #ffc070 60%, #ff6a2a 100%);
+    animation: destelloBoom 2.4s ease-out;
+  }
+  body.boom #mundo { animation: sacudon 2.2s ease-out; }
+  @keyframes destelloBoom { 0% { opacity: 0; } 5% { opacity: 1; } 20% { opacity: 0.85; } 100% { opacity: 0; } }
+  @keyframes sacudon {
+    0% { transform: none; } 4% { transform: translate(1.8vmin, -1.4vmin) rotate(0.4deg); }
+    8% { transform: translate(-2vmin, 1.2vmin) rotate(-0.5deg); } 13% { transform: translate(1.4vmin, 1.6vmin); }
+    18% { transform: translate(-1.2vmin, -1vmin) rotate(0.3deg); } 25% { transform: translate(0.9vmin, 0.6vmin); }
+    33% { transform: translate(-0.6vmin, -0.5vmin); } 42% { transform: translate(0.35vmin, 0.3vmin); }
+    55% { transform: translate(-0.15vmin, 0); } 70%, 100% { transform: none; }
+  }
+
   #ayuda {
     position: fixed; z-index: 6; left: 50%; bottom: 2vmin; transform: translateX(-50%);
     font-size: 0.8rem; letter-spacing: 0.2em; color: var(--gris); opacity: 0.7; transition: opacity 2s;
@@ -481,6 +507,8 @@
 </div></div>
 <div id="ondas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 <div id="destello"></div>
+<canvas id="superlaser" aria-hidden="true"></canvas>
+<div id="firma"><span>by</span>Kike Gosálbez</div>
 <div id="ayuda">Doble clic: pantalla completa</div>
 
 <script>
@@ -593,6 +621,7 @@
   }
 
   /* ================= Estación espacial (render procedural, una sola vez) ================= */
+  var discoEstacion = { u: 0.33, v: 0.27, r: 0.12 };   // centro y radio del disco en fracción del canvas
   (function dibujarEstacion() {
     var cv = document.getElementById('estacion');
     var g = cv.getContext('2d');
@@ -681,13 +710,16 @@
       }
     }
     g.putImageData(img, 0, 0);
+    // Centro del disco en pantalla (para apuntar el superláser)
+    var sx = P[0], sy = P[1] * ct + P[2] * st;
+    discoEstacion = { u: (C + R * sx) / S, v: (C - R * sy) / S, r: Math.sin(RD) * R * 0.8 / S };
   })();
 
   /* ================= Reloj ================= */
   var $ = function (id) { return document.getElementById(id); };
   var fmtFecha = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   function dos(n) { return (n < 10 ? '0' : '') + n; }
-  var ultimoSeg = -1;
+  var ultimoSeg = -1, enCreditos = false;
 
   function actualizar() {
     var d = new Date();
@@ -712,9 +744,13 @@
     var hh = d.getHours();
     $('saludo').textContent = hh >= 6 && hh < 14 ? 'Buenos días, padawans' : (hh >= 14 && hh < 21 ? 'Buenas tardes, padawans' : 'Buenas noches, padawans');
 
-    // Salto al hiperespacio cada minuto: la salida coincide con el cambio de minuto
-    if (S === 57) {
-      var falta = 60000 - (S * 1000 + d.getMilliseconds());
+    // Cada 5 minutos (:00, :05…): superláser y créditos. El resto de minutos: salto al hiperespacio.
+    // En ambos casos el golpe final coincide con el cambio de minuto.
+    var falta = 60000 - (S * 1000 + d.getMilliseconds());
+    var siguienteMin = (d.getMinutes() + 1) % 60;
+    if (siguienteMin % 5 === 0) {
+      if (S === 54 && !enCreditos) setTimeout(escenaCreditos, Math.max(0, falta - 4600));
+    } else if (S === 57 && !enCreditos) {
       setTimeout(saltoHiperespacio, Math.max(0, falta - 3850));
     }
   }
@@ -752,19 +788,22 @@
   function mostrar(el) { el.classList.remove('oculta'); }
   function ocultar(el) { el.classList.add('oculta'); }
 
+  var planeta = document.querySelector('.planeta');
+
   function escenaPrincipal() {
     mostrar(principal); ocultar(mini); estacion.style.opacity = 1;
     reiniciar(espadas, 'encendidas');
-    setTimeout(escenaApertura, 75000);
   }
 
-  function escenaApertura() {
-    if (reducido) { setTimeout(escenaApertura, 75000); return; }
-    saltoHiperespacio();
-    setTimeout(function () {
-      ocultar(principal); estacion.style.opacity = 0;
-    }, 3700);
-    setTimeout(function () { mostrar(intro); reiniciar(intro, 'activa'); }, 4500);
+  // Créditos: la estación carga el superláser, destruye el planeta y arranca el texto de apertura.
+  function escenaCreditos() {
+    if (reducido || enCreditos) return;
+    enCreditos = true;
+    document.body.classList.add('creditos');
+    ocultar(principal);
+    superlaser();
+    setTimeout(function () { estacion.style.opacity = 0; }, 8000);
+    setTimeout(function () { mostrar(intro); reiniciar(intro, 'activa'); }, 8600);
     setTimeout(function () {
       ocultar(intro); intro.classList.remove('activa');
       mostrar(logo); reiniciar(logo, 'activa');
@@ -773,12 +812,139 @@
       texto.style.setProperty('--fin', -(texto.offsetHeight + window.innerHeight * 2.2) + 'px');
       reiniciar(crawl, 'activa');
       mostrar(mini);
-    }, 10500);
-    setTimeout(function () { ocultar(logo); logo.classList.remove('activa'); }, 20000);
+    }, 14600);
+    setTimeout(function () { ocultar(logo); logo.classList.remove('activa'); }, 24100);
     setTimeout(function () {
       saltoHiperespacio();
-      setTimeout(function () { ocultar(crawl); crawl.classList.remove('activa'); escenaPrincipal(); }, 3750);
-    }, 10500 + 58000);
+      setTimeout(function () {
+        ocultar(crawl); crawl.classList.remove('activa');
+        planeta.style.opacity = '';
+        document.body.classList.remove('creditos');
+        enCreditos = false;
+        escenaPrincipal();
+      }, 3750);
+    }, 14600 + 58000);
+  }
+
+  function superlaser() {
+    var cv = $('superlaser'), c = cv.getContext('2d');
+    var r = Math.min(window.devicePixelRatio || 1, 2);
+    var W = window.innerWidth, H = window.innerHeight, U = Math.min(W, H) / 100;
+    cv.width = W * r; cv.height = H * r; c.setTransform(r, 0, 0, r, 0, 0);
+
+    var re = estacion.getBoundingClientRect();
+    var dx = re.left + re.width * discoEstacion.u, dy = re.top + re.height * discoEstacion.v;
+    var dr = re.width * discoEstacion.r;
+    var rp = planeta.getBoundingClientRect();
+    var px = Math.max(rp.left + rp.width * 0.5, 14 * U), py = Math.min(rp.top + rp.height * 0.5, H - 14 * U);
+    var ang = Math.atan2(py - dy, px - dx);
+    var fx = dx + Math.cos(ang) * dr * 1.6, fy = dy + Math.sin(ang) * dr * 1.6;   // foco donde convergen los rayos
+    document.body.style.setProperty('--bx', (px / W * 100) + '%');
+    document.body.style.setProperty('--by', (py / H * 100) + '%');
+
+    var T_RAYOS = 1.6, T_DISPARO = 3.4, T_BOOM = 4.6, T_FIN = 9.5;
+    var restos = [], boom = false;
+    function crearRestos() {
+      for (var i = 0; i < 320; i++) {
+        var a = Math.random() * Math.PI * 2, v = (8 + Math.random() * 70) * U;
+        restos.push({ x: px, y: py, vx: Math.cos(a) * v, vy: Math.sin(a) * v * (0.5 + Math.random() * 0.6),
+          vida: 1.5 + Math.random() * 3, c: ['255,240,200', '255,170,70', '255,110,40', '200,90,60', '170,170,180'][i % 5],
+          r: (0.15 + Math.random() * 0.5) * U });
+      }
+    }
+    function haz(x0, y0, x1, y1, ancho, alfa) {
+      c.lineCap = 'round';
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1);
+      c.strokeStyle = 'rgba(60,255,90,' + 0.18 * alfa + ')'; c.lineWidth = ancho * 6; c.stroke();
+      c.strokeStyle = 'rgba(90,255,120,' + 0.7 * alfa + ')'; c.lineWidth = ancho * 2.2; c.stroke();
+      c.strokeStyle = 'rgba(235,255,235,' + alfa + ')'; c.lineWidth = ancho * 0.8; c.stroke();
+    }
+    function brillo(x, y, rad, a, color) {
+      var g = c.createRadialGradient(x, y, 0, x, y, rad);
+      g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+      g.addColorStop(0.25, 'rgba(' + color + ',' + a * 0.8 + ')');
+      g.addColorStop(1, 'rgba(' + color + ',0)');
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, Math.PI * 2); c.fill();
+    }
+
+    var t0 = performance.now(), antes = t0;
+    function cuadro(ahora) {
+      var t = (ahora - t0) / 1000, dt = Math.min(0.05, (ahora - antes) / 1000);
+      antes = ahora;
+      c.clearRect(0, 0, W, H);
+      c.globalCompositeOperation = 'lighter';
+
+      // Carga: el disco se ilumina cada vez más
+      if (t < T_BOOM + 0.6) {
+        var carga = Math.min(1, t / T_DISPARO);
+        var parpadeo = 0.85 + 0.15 * Math.sin(t * 40);
+        brillo(dx, dy, dr * (0.6 + carga * 1.6), (0.25 + carga * 0.7) * parpadeo, '80,255,110');
+      }
+      // Rayos tributarios que convergen en el foco
+      if (t > T_RAYOS && t < T_BOOM + 0.3) {
+        var p = Math.min(1, (t - T_RAYOS) / 0.9);
+        for (var k = 0; k < 8; k++) {
+          var ak = k / 8 * Math.PI * 2 + 0.2;
+          var ox = dx + Math.cos(ak) * dr * 0.85, oy = dy + Math.sin(ak) * dr * 0.85 * 0.8;
+          haz(ox, oy, ox + (fx - ox) * p, oy + (fy - oy) * p, 0.22 * U, 0.9);
+        }
+        if (p >= 1) brillo(fx, fy, dr * (0.9 + 0.3 * Math.sin(t * 50)), 1, '120,255,140');
+      }
+      // Disparo principal hacia el planeta
+      if (t > T_DISPARO && t < T_BOOM + 0.5) {
+        var q = Math.min(1, (t - T_DISPARO) / 0.35);
+        var bx = fx + (px - fx) * q, by = fy + (py - fy) * q;
+        var fade = t > T_BOOM ? 1 - (t - T_BOOM) / 0.5 : 1;
+        haz(fx, fy, bx, by, (0.9 + 0.15 * Math.sin(t * 60)) * U, fade);
+        brillo(bx, by, 4 * U, fade, '120,255,140');
+      }
+      // Explosión del planeta
+      if (t >= T_BOOM) {
+        if (!boom) {
+          boom = true; crearRestos();
+          planeta.style.transition = 'none'; planeta.style.opacity = 0;
+          void planeta.offsetWidth; planeta.style.transition = '';
+          var b = document.body;
+          b.classList.remove('boom'); void b.offsetWidth; b.classList.add('boom');
+          setTimeout(function () { b.classList.remove('boom'); }, 2500);
+        }
+        var e = t - T_BOOM;
+        // Bola de fuego
+        var rf = (10 + e * 55) * U, af = Math.max(0, 1 - e / 2.6);
+        var g = c.createRadialGradient(px, py, 0, px, py, rf);
+        g.addColorStop(0, 'rgba(255,255,240,' + af + ')');
+        g.addColorStop(0.2, 'rgba(255,220,140,' + af * 0.9 + ')');
+        g.addColorStop(0.5, 'rgba(255,120,40,' + af * 0.55 + ')');
+        g.addColorStop(1, 'rgba(120,20,0,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(px, py, rf, 0, Math.PI * 2); c.fill();
+        // Anillo plano de choque (inclinado)
+        var ra = e * 95 * U, aa = Math.max(0, 1 - e / 4);
+        c.save(); c.translate(px, py); c.rotate(-0.28);
+        for (var j = 0; j < 3; j++) {
+          c.beginPath(); c.ellipse(0, 0, ra * (1 - j * 0.06), ra * 0.16 * (1 - j * 0.06), 0, 0, Math.PI * 2);
+          c.strokeStyle = j === 0 ? 'rgba(255,240,220,' + aa + ')' : (j === 1 ? 'rgba(255,170,80,' + aa * 0.7 + ')' : 'rgba(140,190,255,' + aa * 0.5 + ')');
+          c.lineWidth = (j === 0 ? 0.6 : 2.2) * U * (0.4 + aa);
+          c.stroke();
+        }
+        c.restore();
+        // Segunda onda circular
+        var r2 = e * 60 * U, a2 = Math.max(0, 0.8 - e / 2.5);
+        c.beginPath(); c.arc(px, py, r2, 0, Math.PI * 2);
+        c.strokeStyle = 'rgba(255,200,150,' + a2 + ')'; c.lineWidth = 1.2 * U; c.stroke();
+        // Restos
+        restos.forEach(function (d) {
+          if (d.vida <= 0) return;
+          var x0 = d.x, y0 = d.y;
+          d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= 0.992; d.vy *= 0.992; d.vida -= dt;
+          var a = Math.min(1, d.vida);
+          c.strokeStyle = 'rgba(' + d.c + ',' + a + ')'; c.lineWidth = d.r;
+          c.beginPath(); c.moveTo(x0 - d.vx * 0.04, y0 - d.vy * 0.04); c.lineTo(d.x, d.y); c.stroke();
+        });
+      }
+      c.globalCompositeOperation = 'source-over';
+      if (t < T_FIN) requestAnimationFrame(cuadro); else c.clearRect(0, 0, W, H);
+    }
+    requestAnimationFrame(cuadro);
   }
 
   escenaPrincipal();
