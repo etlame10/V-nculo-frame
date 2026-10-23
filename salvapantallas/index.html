@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Salvapantallas Salesianos Juan XXIII</title>
+<style>
+  :root {
+    --espacio: #000008;
+    --amarillo: #ffe81f;
+    --azul: #4bd5ee;
+    --gris: #9aa3b5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(ellipse at center, #0b0b2a 0%, var(--espacio) 70%);
+    color: var(--amarillo);
+    font-family: "Franklin Gothic Medium", "Arial Narrow", Impact, "Helvetica Neue", Arial, sans-serif;
+    text-transform: uppercase;
+    overflow: hidden;
+    cursor: none;
+  }
+  /* Estrellas fijas (se generan una sola vez, sin animación) */
+  #estrellas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  main {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 2.5vmin;
+    padding: 4vmin;
+  }
+  .colegio {
+    font-size: clamp(1.6rem, 6vmin, 4.5rem);
+    letter-spacing: 0.25em;
+    text-shadow: 0 0 1.5vmin rgba(255, 232, 31, 0.35);
+  }
+  .ciclo {
+    font-size: clamp(1rem, 3vmin, 2.2rem);
+    letter-spacing: 0.4em;
+    color: var(--azul);
+  }
+  .linea {
+    width: min(60vw, 40rem);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--amarillo), transparent);
+    margin: 1vmin 0;
+  }
+  #hora {
+    font-size: clamp(4rem, 22vmin, 16rem);
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    text-shadow: 0 0 3vmin rgba(255, 232, 31, 0.45);
+  }
+  #fecha {
+    font-size: clamp(1.2rem, 4.5vmin, 3.2rem);
+    letter-spacing: 0.2em;
+    color: var(--gris);
+  }
+  .frase {
+    font-size: clamp(0.8rem, 2.2vmin, 1.5rem);
+    letter-spacing: 0.3em;
+    color: var(--azul);
+    opacity: 0.85;
+  }
+</style>
+</head>
+<body>
+<canvas id="estrellas"></canvas>
+<main>
+  <div class="colegio">Salesianos Juan XXIII</div>
+  <div class="ciclo">FP · Telecomunicaciones</div>
+  <div class="linea"></div>
+  <div id="hora">00:00:00</div>
+  <div id="fecha">&nbsp;</div>
+  <div class="linea"></div>
+  <div class="frase">Que la fuerza te acompañe</div>
+</main>
+
+<script>
+(function () {
+  // --- Cielo estrellado estático ---
+  var canvas = document.getElementById('estrellas');
+  function pintarEstrellas() {
+    var w = canvas.width = window.innerWidth;
+    var h = canvas.height = window.innerHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    var semilla = 20260101; // generador determinista: el cielo no cambia al redimensionar
+    function azar() {
+      semilla = (semilla * 1664525 + 1013904223) % 4294967296;
+      return semilla / 4294967296;
+    }
+    var n = Math.round((w * h) / 4500);
+    for (var i = 0; i < n; i++) {
+      var r = azar() < 0.93 ? 0.6 : 1.4;
+      ctx.globalAlpha = 0.35 + azar() * 0.65;
+      ctx.fillStyle = azar() < 0.15 ? '#bfe9ff' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(azar() * w, azar() * h, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  pintarEstrellas();
+  window.addEventListener('resize', pintarEstrellas);
+
+  // --- Fecha y hora actuales ---
+  var horaEl = document.getElementById('hora');
+  var fechaEl = document.getElementById('fecha');
+  var fmtFecha = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+  function dos(n) { return (n < 10 ? '0' : '') + n; }
+  function actualizar() {
+    var d = new Date();
+    horaEl.textContent = dos(d.getHours()) + ':' + dos(d.getMinutes()) + ':' + dos(d.getSeconds());
+    fechaEl.textContent = fmtFecha.format(d);
+  }
+  actualizar();
+  setInterval(actualizar, 1000);
+})();
+</script>
+</body>
+</html>
