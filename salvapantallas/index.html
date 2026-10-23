@@ -231,28 +231,11 @@
   #mini .h { font-size: clamp(1.4rem, 5vmin, 3.4rem); font-weight: 700; }
   #mini .f { font-size: clamp(0.7rem, 1.8vmin, 1.1rem); letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.85; }
 
-  /* ---------- Naves ---------- */
-  .nave {
-    position: fixed; z-index: 1; pointer-events: none; width: 16vmin;
-    animation: acercarse var(--dur, 7s) cubic-bezier(.55, 0, .9, .6) forwards;
-  }
-  @keyframes acercarse {
-    0% { transform: translate(var(--x0), var(--y0)) scale(0.03); opacity: 0; }
-    12% { opacity: 1; }
-    100% { transform: translate(var(--x1), var(--y1)) scale(var(--s1, 4)) rotate(var(--r, 0deg)); opacity: 1; }
-  }
-  .laser {
-    position: fixed; z-index: 1; pointer-events: none; height: 0.5vmin; width: 7vmin; border-radius: 1vmin;
-    background: #fff; transform-origin: left center;
-    box-shadow: 0 0 0.6vmin #fff, 0 0 1.5vmin var(--c), 0 0 3vmin var(--c);
-    animation: disparo 0.7s linear forwards;
-  }
-  @keyframes disparo { from { transform: translate(0, 0) rotate(var(--a)) scaleX(0.4); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scaleX(1.4); opacity: 0; } }
-
-  /* ---------- Destello del salto ---------- */
-  /* ---------- Salto al hiperespacio (3,6 s: carga 0–0,6 · salto 0,6–2,6 · salida 2,6–3,6) ---------- */
+  /* ---------- Salto al hiperespacio (5 s: carga 0–1 · salto 1–3,8 · salida 3,8–5) ---------- */
   #mundo, #temblor { position: fixed; inset: 0; z-index: 2; }
   #temblor { position: absolute; z-index: auto; }
+  #batalla { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; transition: opacity 0.6s; }
+  body.hiper #batalla { opacity: 0.15; }
   #destello {
     position: fixed; inset: 0; z-index: 6; opacity: 0; pointer-events: none;
     background: radial-gradient(circle at 50% 50%, #ffffff 0%, #e4f4ff 35%, #8cc4ff 80%, #4a7dff 100%);
@@ -260,17 +243,18 @@
   #hiper { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0; overflow: hidden; }
   .tunel {
     position: absolute; inset: -50%; mix-blend-mode: screen; filter: blur(1.5px);
-    background: repeating-conic-gradient(from 0deg, rgba(90, 160, 255, 0) 0deg 1.2deg, rgba(150, 210, 255, 0.6) 1.7deg, rgba(90, 160, 255, 0) 2.4deg 3.5deg);
-    -webkit-mask-image: radial-gradient(circle, transparent 3%, #000 18%, #000 45%, transparent 70%);
-            mask-image: radial-gradient(circle, transparent 3%, #000 18%, #000 45%, transparent 70%);
+    background: repeating-conic-gradient(from 0deg, rgba(90, 160, 255, 0) 0deg 1.2deg, rgba(160, 215, 255, 0.75) 1.7deg, rgba(90, 160, 255, 0) 2.4deg 3.5deg);
+    -webkit-mask-image: radial-gradient(circle, transparent 3%, #000 16%, #000 48%, transparent 72%);
+            mask-image: radial-gradient(circle, transparent 3%, #000 16%, #000 48%, transparent 72%);
   }
   .tunel.t2 {
-    background: repeating-conic-gradient(from 1deg, rgba(170, 100, 255, 0) 0deg 2.5deg, rgba(200, 130, 255, 0.4) 3deg, rgba(170, 100, 255, 0) 3.6deg 6deg);
+    background: repeating-conic-gradient(from 1deg, rgba(170, 100, 255, 0) 0deg 2.5deg, rgba(210, 130, 255, 0.55) 3deg, rgba(170, 100, 255, 0) 3.6deg 6deg);
   }
   .vineta {
     position: absolute; inset: 0;
-    box-shadow: inset 0 0 18vmin 5vmin rgba(60, 140, 255, 0.85), inset 0 0 45vmin rgba(130, 80, 255, 0.5);
+    box-shadow: inset 0 0 20vmin 6vmin rgba(60, 140, 255, 0.95), inset 0 0 50vmin rgba(130, 80, 255, 0.6);
   }
+  .oscuridad { position: absolute; inset: 0; background: radial-gradient(circle, transparent 20%, rgba(0, 0, 10, 0.85) 80%); }
   #nucleoLuz {
     position: fixed; left: 50%; top: 50%; width: 60vmin; height: 60vmin; margin: -30vmin 0 0 -30vmin;
     border-radius: 50%; z-index: 1; opacity: 0; pointer-events: none; mix-blend-mode: screen;
@@ -279,69 +263,108 @@
   #ondas { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
   #ondas i {
     position: absolute; left: 50%; top: 50%; width: 40vmin; height: 40vmin; margin: -20vmin 0 0 -20vmin;
-    border-radius: 50%; border: 0.5vmin solid rgba(210, 240, 255, 0.95); opacity: 0;
-    box-shadow: 0 0 3vmin rgba(120, 190, 255, 0.95), inset 0 0 3vmin rgba(120, 190, 255, 0.95), 0 0 9vmin rgba(110, 90, 255, 0.6);
+    border-radius: 50%; border: 0.6vmin solid rgba(210, 240, 255, 0.95); opacity: 0;
+    box-shadow: 0 0 3vmin rgba(120, 190, 255, 0.95), inset 0 0 3vmin rgba(120, 190, 255, 0.95), 0 0 10vmin rgba(110, 90, 255, 0.7);
   }
 
-  body.hiper #hiper { animation: hiperCapa 3.6s ease forwards; }
-  body.hiper .tunel { animation: girar 3.6s linear forwards; }
+  body.hiper #hiper { animation: hiperCapa 5s ease forwards; }
+  body.hiper .oscuridad { animation: oscurecer 5s ease forwards; }
+  body.hiper .tunel { animation: girar 5s linear forwards; }
   body.hiper .tunel.t2 { animation-name: girar2; }
-  body.hiper #nucleoLuz { animation: nucleo 3.6s ease forwards; }
-  body.hiper #ondas i { animation: onda 1.4s cubic-bezier(.1, .7, .3, 1) forwards; }
-  body.hiper #ondas i:nth-child(1) { animation-delay: 0.55s; animation-duration: 1s; }
-  body.hiper #ondas i:nth-child(2) { animation-delay: 2.6s; }
-  body.hiper #ondas i:nth-child(3) { animation-delay: 2.78s; }
-  body.hiper #ondas i:nth-child(4) { animation-delay: 2.98s; }
-  body.hiper #destello { animation: destello 1.3s ease-out 2.55s; }
-  body.hiper #mundo { animation: empuje 3.6s ease-in-out; }
-  body.hiper #temblor { animation: temblor 3.6s linear; }
-  body.hiper .juan { animation: auraJuan 3.6s ease; }
-  body.hiper .hora { animation: auraHora 3.6s ease; }
-  body.hiper .espadas { animation: auraSables 3.6s ease; }
+  body.hiper #nucleoLuz { animation: nucleo 5s ease forwards; }
+  body.hiper #ondas i { animation: onda 1.5s cubic-bezier(.1, .7, .3, 1) forwards; }
+  body.hiper #ondas i:nth-child(1) { animation-delay: 0.95s; animation-duration: 1.1s; }
+  body.hiper #ondas i:nth-child(2) { animation-delay: 3.8s; }
+  body.hiper #ondas i:nth-child(3) { animation-delay: 3.95s; }
+  body.hiper #ondas i:nth-child(4) { animation-delay: 4.12s; }
+  body.hiper #ondas i:nth-child(5) { animation-delay: 4.32s; animation-duration: 1.8s; }
+  body.hiper #destello { animation: destello 1.25s ease-out 3.75s; }
+  body.hiper #mundo { animation: empuje 5s ease-in-out; }
+  body.hiper #temblor { animation: temblor 5s linear; }
+  body.hiper .juan { animation: auraJuan 5s ease; }
+  body.hiper .hora { animation: auraHora 5s ease; }
+  body.hiper .espadas { animation: auraSables 5s ease; }
 
-  @keyframes hiperCapa { 0% { opacity: 0; } 16% { opacity: 0.35; } 28% { opacity: 1; } 70% { opacity: 1; } 76%, 100% { opacity: 0; } }
-  @keyframes girar { from { transform: rotate(0deg) scale(0.6); } to { transform: rotate(45deg) scale(1.7); } }
-  @keyframes girar2 { from { transform: rotate(0deg) scale(0.7); } to { transform: rotate(-35deg) scale(1.8); } }
+  @keyframes hiperCapa { 0% { opacity: 0; } 20% { opacity: 0.5; } 30% { opacity: 1; } 74% { opacity: 1; } 79%, 100% { opacity: 0; } }
+  @keyframes oscurecer { 0% { opacity: 0; } 18% { opacity: 1; } 24% { opacity: 0.2; } 100% { opacity: 0; } }
+  @keyframes girar { from { transform: rotate(0deg) scale(0.5); } to { transform: rotate(70deg) scale(1.9); } }
+  @keyframes girar2 { from { transform: rotate(0deg) scale(0.6); } to { transform: rotate(-55deg) scale(2); } }
   @keyframes nucleo {
-    0% { opacity: 0; transform: scale(0.1); } 16% { opacity: 0.95; transform: scale(0.3); }
-    24% { opacity: 0.55; transform: scale(0.6); } 70% { opacity: 0.85; transform: scale(0.95); }
-    74% { opacity: 1; transform: scale(3.2); } 92%, 100% { opacity: 0; transform: scale(4.5); }
+    0% { opacity: 0; transform: scale(0.05); } 18% { opacity: 1; transform: scale(0.4); }
+    21% { opacity: 0.6; transform: scale(0.7); } 74% { opacity: 0.9; transform: scale(1.1); }
+    77% { opacity: 1; transform: scale(3.8); } 94%, 100% { opacity: 0; transform: scale(5); }
   }
-  @keyframes onda { 0% { opacity: 1; transform: scale(0.05); } 100% { opacity: 0; transform: scale(5.5); } }
-  @keyframes destello { 0% { opacity: 0; } 10% { opacity: 0.95; } 100% { opacity: 0; } }
+  @keyframes onda { 0% { opacity: 1; transform: scale(0.05); } 100% { opacity: 0; transform: scale(6); } }
+  @keyframes destello { 0% { opacity: 0; } 7% { opacity: 1; } 25% { opacity: 0.25; } 38% { opacity: 0.8; } 100% { opacity: 0; } }
   @keyframes empuje {
     0% { transform: none; filter: none; }
-    16% { transform: scale(0.95); filter: brightness(0.8); }
-    24% { transform: scale(1.02); filter: brightness(1.3); }
-    68% { transform: scale(1.14); filter: brightness(1.7) saturate(1.4) blur(2.5px); }
-    73% { transform: scale(0.96); filter: brightness(2.2); }
-    82% { transform: scale(1.015); filter: brightness(1.15); }
+    19% { transform: scale(0.9); filter: brightness(0.5) saturate(0.7); }
+    23% { transform: scale(1.04); filter: brightness(1.5) contrast(1.1); }
+    72% { transform: scale(1.22); filter: brightness(1.9) saturate(1.6) contrast(1.15) blur(4px); }
+    77% { transform: scale(0.94); filter: brightness(2.6); }
+    85% { transform: scale(1.025); filter: brightness(1.3); }
     100% { transform: none; filter: none; }
   }
   @keyframes temblor {
-    0%, 17%, 72%, 100% { transform: none; }
-    20% { transform: translate(0.3vmin, -0.2vmin); } 24% { transform: translate(-0.4vmin, 0.3vmin); }
-    28% { transform: translate(0.35vmin, 0.4vmin); } 32% { transform: translate(-0.25vmin, -0.4vmin); }
-    36% { transform: translate(0.45vmin, 0.1vmin); } 40% { transform: translate(-0.35vmin, 0.35vmin); }
-    44% { transform: translate(0.2vmin, -0.45vmin); } 48% { transform: translate(-0.45vmin, -0.1vmin); }
-    52% { transform: translate(0.4vmin, 0.4vmin); } 56% { transform: translate(-0.3vmin, -0.3vmin); }
-    60% { transform: translate(0.5vmin, -0.2vmin); } 64% { transform: translate(-0.5vmin, 0.3vmin); }
-    68% { transform: translate(0.4vmin, 0.5vmin); }
-    74% { transform: translate(0, 1.4vmin); } 77% { transform: translate(0, -0.7vmin); } 80% { transform: translate(0, 0.25vmin); } 83% { transform: none; }
+    0%, 100% { transform: none; }
+    4% { transform: translate(0.08vmin, -0.08vmin); }
+    6% { transform: translate(0.10vmin, -0.10vmin); }
+    8% { transform: translate(-0.13vmin, -0.13vmin); }
+    10% { transform: translate(0.15vmin, -0.15vmin); }
+    12% { transform: translate(-0.18vmin, -0.18vmin); }
+    14% { transform: translate(-0.20vmin, 0.20vmin); }
+    16% { transform: translate(0.22vmin, -0.22vmin); }
+    18% { transform: translate(-0.25vmin, -0.25vmin); }
+    21% { transform: translate(0.16vmin, -0.24vmin) rotate(0.02deg); }
+    23% { transform: translate(-0.24vmin, 0.18vmin) rotate(-0.04deg); }
+    25% { transform: translate(-0.23vmin, -0.27vmin) rotate(0.01deg); }
+    27% { transform: translate(-0.24vmin, -0.27vmin) rotate(0.01deg); }
+    29% { transform: translate(-0.33vmin, -0.32vmin) rotate(0.01deg); }
+    31% { transform: translate(0.35vmin, 0.33vmin) rotate(-0.06deg); }
+    33% { transform: translate(-0.43vmin, -0.31vmin) rotate(-0.05deg); }
+    35% { transform: translate(0.50vmin, 0.37vmin) rotate(0.13deg); }
+    37% { transform: translate(-0.45vmin, -0.51vmin) rotate(-0.10deg); }
+    39% { transform: translate(0.46vmin, -0.54vmin) rotate(0.02deg); }
+    41% { transform: translate(0.47vmin, 0.54vmin) rotate(0.03deg); }
+    43% { transform: translate(0.43vmin, -0.66vmin) rotate(-0.01deg); }
+    45% { transform: translate(-0.45vmin, 0.62vmin) rotate(0.18deg); }
+    47% { transform: translate(0.54vmin, 0.72vmin) rotate(-0.06deg); }
+    49% { transform: translate(0.59vmin, -0.63vmin) rotate(-0.11deg); }
+    51% { transform: translate(0.54vmin, -0.63vmin) rotate(0.17deg); }
+    53% { transform: translate(0.55vmin, 0.66vmin) rotate(-0.10deg); }
+    55% { transform: translate(-0.85vmin, 0.80vmin) rotate(0.22deg); }
+    57% { transform: translate(0.93vmin, -0.60vmin) rotate(-0.17deg); }
+    59% { transform: translate(-0.60vmin, -0.70vmin) rotate(-0.25deg); }
+    61% { transform: translate(0.84vmin, 1.01vmin) rotate(0.10deg); }
+    63% { transform: translate(-0.83vmin, 0.81vmin) rotate(-0.06deg); }
+    65% { transform: translate(0.94vmin, -0.75vmin) rotate(0.27deg); }
+    67% { transform: translate(0.76vmin, 0.96vmin) rotate(-0.23deg); }
+    69% { transform: translate(-0.96vmin, 1.00vmin) rotate(-0.25deg); }
+    71% { transform: translate(-1.03vmin, -1.04vmin) rotate(0.28deg); }
+    73% { transform: translate(1.00vmin, -1.18vmin) rotate(0.31deg); }
+    75% { transform: translate(1.03vmin, 0.82vmin) rotate(-0.26deg); }
+    77% { transform: translate(0, 2.8vmin) scale(1.01); }
+    80% { transform: translate(0, -1.5vmin); }
+    83% { transform: translate(0.4vmin, 0.7vmin); }
+    86% { transform: translate(-0.3vmin, -0.3vmin); }
+    89% { transform: translate(0, 0.12vmin); }
+    92% { transform: none; }
   }
   @keyframes auraJuan {
-    0%, 20% { text-shadow: 0 0 2.5vmin rgba(255, 232, 31, 0.35); }
-    50% { text-shadow: -0.6vmin 0 rgba(255, 40, 90, 0.7), 0.6vmin 0 rgba(40, 200, 255, 0.7), 0 0 4vmin rgba(255, 232, 31, 0.7); }
-    74% { text-shadow: 0 0 1vmin #fff, 0 0 4vmin #ffe81f, 0 0 10vmin #ffb000, 0 0 22vmin rgba(255, 190, 0, 0.75); }
+    0%, 22% { text-shadow: 0 0 2.5vmin rgba(255, 232, 31, 0.35); }
+    50% { text-shadow: -0.9vmin 0 rgba(255, 30, 80, 0.8), 0.9vmin 0 rgba(30, 200, 255, 0.8), 0 0 5vmin rgba(255, 232, 31, 0.8); }
+    72% { text-shadow: -1.6vmin 0.3vmin rgba(255, 30, 80, 0.85), 1.6vmin -0.3vmin rgba(30, 200, 255, 0.85), 0 0 6vmin rgba(255, 232, 31, 0.9); }
+    78% { text-shadow: 0 0 1vmin #fff, 0 0 4vmin #ffe81f, 0 0 12vmin #ffb000, 0 0 26vmin rgba(255, 190, 0, 0.85); }
     100% { text-shadow: 0 0 2.5vmin rgba(255, 232, 31, 0.35); }
   }
   @keyframes auraHora {
-    0%, 20% { text-shadow: 0 0 1vmin rgba(143, 243, 255, 0.9), 0 0 3.5vmin rgba(75, 213, 238, 0.6); }
-    50% { text-shadow: -0.8vmin 0 rgba(255, 40, 120, 0.75), 0.8vmin 0 rgba(40, 220, 255, 0.85), 0 0 5vmin rgba(75, 213, 238, 0.9); }
-    74% { text-shadow: 0 0 1vmin #fff, 0 0 3vmin #fff, 0 0 8vmin #8ff3ff, 0 0 18vmin #3a8bff, 0 0 30vmin rgba(110, 90, 255, 0.8); }
+    0%, 22% { text-shadow: 0 0 1vmin rgba(143, 243, 255, 0.9), 0 0 3.5vmin rgba(75, 213, 238, 0.6); }
+    50% { text-shadow: -1vmin 0 rgba(255, 40, 120, 0.8), 1vmin 0 rgba(40, 220, 255, 0.9), 0 0 6vmin rgba(75, 213, 238, 0.9); }
+    72% { text-shadow: -1.8vmin 0.4vmin rgba(255, 40, 120, 0.85), 1.8vmin -0.4vmin rgba(40, 220, 255, 0.95), 0 0 7vmin rgba(75, 213, 238, 1); }
+    78% { text-shadow: 0 0 1vmin #fff, 0 0 3vmin #fff, 0 0 9vmin #8ff3ff, 0 0 20vmin #3a8bff, 0 0 34vmin rgba(110, 90, 255, 0.85); }
     100% { text-shadow: 0 0 1vmin rgba(143, 243, 255, 0.9), 0 0 3.5vmin rgba(75, 213, 238, 0.6); }
   }
-  @keyframes auraSables { 0%, 20%, 100% { filter: none; } 50% { filter: brightness(1.5); } 74% { filter: brightness(2.6) saturate(1.5); } }
+  @keyframes auraSables { 0%, 22%, 100% { filter: none; } 50% { filter: brightness(1.6); } 72% { filter: brightness(2.2); } 78% { filter: brightness(3) saturate(1.6); } }
 
   #ayuda {
     position: fixed; z-index: 6; left: 50%; bottom: 2vmin; transform: translateX(-50%);
@@ -356,7 +379,8 @@
 <body>
 <canvas id="estrellas"></canvas>
 <div class="nebulosa"></div>
-<div id="hiper" aria-hidden="true"><div class="tunel"></div><div class="tunel t2"></div><div class="vineta"></div></div>
+<div id="hiper" aria-hidden="true"><div class="tunel"></div><div class="tunel t2"></div><div class="vineta"></div><div class="oscuridad"></div></div>
+<canvas id="batalla" aria-hidden="true"></canvas>
 <div id="nucleoLuz" aria-hidden="true"></div>
 <div id="mundo"><div id="temblor">
 <div class="planeta"></div>
@@ -455,50 +479,9 @@
 
 <div id="mini" class="oculta"><div class="h" id="miniHora">00:00</div><div class="f" id="miniFecha">&nbsp;</div></div>
 </div></div>
-<div id="ondas" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div id="ondas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 <div id="destello"></div>
 <div id="ayuda">Doble clic: pantalla completa</div>
-
-<!-- Plantillas de naves -->
-<template id="tie">
-  <svg viewBox="-100 -75 200 150" class="nave">
-    <g fill="#2b2f37" stroke="#9aa3b2" stroke-width="2">
-      <polygon points="-92,-70 -78,-70 -72,0 -78,70 -92,70 -98,0"/>
-      <polygon points="92,-70 78,-70 72,0 78,70 92,70 98,0"/>
-      <rect x="-74" y="-6" width="48" height="12" fill="#646b78"/>
-      <rect x="26" y="-6" width="48" height="12" fill="#646b78"/>
-      <circle cx="0" cy="0" r="27" fill="#7c8492"/>
-    </g>
-    <g stroke="#3a3f49" stroke-width="1.5" fill="none">
-      <line x1="-85" y1="-62" x2="-85" y2="62"/><line x1="85" y1="-62" x2="85" y2="62"/>
-    </g>
-    <circle cx="0" cy="0" r="15" fill="#11141a" stroke="#5a616e" stroke-width="2"/>
-    <g stroke="#5a616e" stroke-width="1.5">
-      <line x1="-15" y1="0" x2="15" y2="0"/><line x1="0" y1="-15" x2="0" y2="15"/>
-      <line x1="-10.6" y1="-10.6" x2="10.6" y2="10.6"/><line x1="10.6" y1="-10.6" x2="-10.6" y2="10.6"/>
-    </g>
-  </svg>
-</template>
-<template id="xwing">
-  <svg viewBox="-100 -60 200 120" class="nave">
-    <g fill="#d7d9de" stroke="#6c717c" stroke-width="1.5">
-      <polygon points="-6,-4 -94,-46 -96,-40 -10,4"/>
-      <polygon points="6,-4 94,-46 96,-40 10,4"/>
-      <polygon points="-6,4 -94,46 -96,40 -10,-4"/>
-      <polygon points="6,4 94,46 96,40 10,-4"/>
-      <rect x="-99" y="-50" width="5" height="10"/><rect x="94" y="-50" width="5" height="10"/>
-      <rect x="-99" y="40" width="5" height="10"/><rect x="94" y="40" width="5" height="10"/>
-    </g>
-    <g fill="#c63b2a"><polygon points="-40,-23 -60,-32 -61,-29 -42,-20"/><polygon points="40,-23 60,-32 61,-29 42,-20"/></g>
-    <g fill="#ff9a3a" stroke="#6c717c" stroke-width="2">
-      <circle cx="-24" cy="-14" r="8"/><circle cx="24" cy="-14" r="8"/>
-      <circle cx="-24" cy="14" r="8"/><circle cx="24" cy="14" r="8"/>
-    </g>
-    <g fill="#fff3c4"><circle cx="-24" cy="-14" r="3.5"/><circle cx="24" cy="-14" r="3.5"/><circle cx="-24" cy="14" r="3.5"/><circle cx="24" cy="14" r="3.5"/></g>
-    <circle cx="0" cy="0" r="11" fill="#e4e6ea" stroke="#6c717c" stroke-width="2"/>
-    <circle cx="0" cy="0" r="5" fill="#2a2f38"/>
-  </svg>
-</template>
 
 <script>
 (function () {
@@ -549,7 +532,7 @@
     ctx.fillRect(0, 0, w, h);
     if (hiper) {
       // Resplandor central del túnel
-      var k = Math.min(1, velocidad / 0.06);
+      var k = Math.min(1, velocidad / 0.07);
       var gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.45);
       gr.addColorStop(0, 'rgba(220,240,255,' + 0.55 * k + ')');
       gr.addColorStop(0.15, 'rgba(90,150,255,' + 0.28 * k + ')');
@@ -602,10 +585,11 @@
     saltando = true;
     var b = document.body;
     b.classList.remove('hiper'); void b.offsetWidth; b.classList.add('hiper');
-    velObjetivo = -0.004;
-    setTimeout(function () { velObjetivo = 0.065; }, 600);
-    setTimeout(function () { velObjetivo = VEL_BASE; velocidad = 0.003; }, 2600);
-    setTimeout(function () { b.classList.remove('hiper'); saltando = false; }, 3700);
+    velObjetivo = -0.006;
+    setTimeout(function () { velObjetivo = 0.05; }, 1000);
+    setTimeout(function () { velObjetivo = 0.095; }, 2200);
+    setTimeout(function () { velObjetivo = VEL_BASE; velocidad = 0.003; }, 3800);
+    setTimeout(function () { b.classList.remove('hiper'); saltando = false; }, 5100);
   }
 
   /* ================= Estación espacial (render procedural, una sola vez) ================= */
@@ -731,7 +715,7 @@
     // Salto al hiperespacio cada minuto: la salida coincide con el cambio de minuto
     if (S === 57) {
       var falta = 60000 - (S * 1000 + d.getMilliseconds());
-      setTimeout(saltoHiperespacio, Math.max(0, falta - 2650));
+      setTimeout(saltoHiperespacio, Math.max(0, falta - 3850));
     }
   }
   actualizar();
@@ -779,8 +763,8 @@
     saltoHiperespacio();
     setTimeout(function () {
       ocultar(principal); estacion.style.opacity = 0;
-    }, 2500);
-    setTimeout(function () { mostrar(intro); reiniciar(intro, 'activa'); }, 3300);
+    }, 3700);
+    setTimeout(function () { mostrar(intro); reiniciar(intro, 'activa'); }, 4500);
     setTimeout(function () {
       ocultar(intro); intro.classList.remove('activa');
       mostrar(logo); reiniciar(logo, 'activa');
@@ -789,65 +773,382 @@
       texto.style.setProperty('--fin', -(texto.offsetHeight + window.innerHeight * 2.2) + 'px');
       reiniciar(crawl, 'activa');
       mostrar(mini);
-    }, 9300);
-    setTimeout(function () { ocultar(logo); logo.classList.remove('activa'); }, 18800);
+    }, 10500);
+    setTimeout(function () { ocultar(logo); logo.classList.remove('activa'); }, 20000);
     setTimeout(function () {
       saltoHiperespacio();
-      setTimeout(function () { ocultar(crawl); crawl.classList.remove('activa'); escenaPrincipal(); }, 2550);
-    }, 9300 + 58000);
+      setTimeout(function () { ocultar(crawl); crawl.classList.remove('activa'); escenaPrincipal(); }, 3750);
+    }, 10500 + 58000);
   }
 
   escenaPrincipal();
 
-  /* ================= Naves que pasan ================= */
-  var plantillas = [$('tie'), $('xwing')];
-  function aleatorio(a, b) { return a + Math.random() * (b - a); }
-
-  function pasarNave() {
+  /* ================= Batallas espaciales ================= */
+  (function batallas() {
     if (reducido) return;
-    var esTie = Math.random() < 0.6;
-    var formacion = esTie ? (Math.random() < 0.5 ? 2 : 1) : 1;
-    var x0 = aleatorio(30, 70), y0 = aleatorio(30, 60);
-    var izquierda = Math.random() < 0.5;
-    var x1 = izquierda ? aleatorio(-80, -40) : aleatorio(140, 180);
-    var y1 = aleatorio(-40, 140);
-    var dur = aleatorio(5, 8);
+    var cv = document.getElementById('batalla');
+    var bc = cv.getContext('2d');
+    var W = 0, H = 0, U = 1;
+    var naves = [], laseres = [], explosiones = [], chispas = [], destructor = null;
+    var enBatalla = false, finBatalla = 0, proxima = 4, reloj = 0, refuerzo = 0, ladoR = -1;
+    var TAU = Math.PI * 2;
 
-    for (var k = 0; k < formacion; k++) {
-      var nave = plantillas[esTie ? 0 : 1].content.firstElementChild.cloneNode(true);
-      var off = k * 6;
-      nave.style.left = '0'; nave.style.top = '0';
-      nave.style.setProperty('--x0', 'calc(' + (x0 + off) + 'vw - 8vmin)');
-      nave.style.setProperty('--y0', 'calc(' + (y0 + off * 0.6) + 'vh - 6vmin)');
-      nave.style.setProperty('--x1', (x1 + off * 3) + 'vw');
-      nave.style.setProperty('--y1', (y1 + off * 2) + 'vh');
-      nave.style.setProperty('--s1', aleatorio(3, 5).toFixed(2));
-      nave.style.setProperty('--r', (izquierda ? -1 : 1) * aleatorio(5, 25) + 'deg');
-      nave.style.setProperty('--dur', (dur + k * 0.5) + 's');
-      document.body.appendChild(nave);
-      (function (n) { setTimeout(function () { n.remove(); }, (dur + 1) * 1000); })(nave);
+    function tam() {
+      var r = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight; U = Math.min(W, H) / 100;
+      cv.width = W * r; cv.height = H * r;
+      bc.setTransform(r, 0, 0, r, 0, 0);
+    }
+    tam();
+    window.addEventListener('resize', tam);
+
+    function azar(a, b) { return a + Math.random() * (b - a); }
+    function angulo(a) { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; }
+
+    function crearNave(bando, lado) {
+      var prof = azar(0.75, 1.25);
+      return {
+        b: bando, prof: prof,
+        x: lado < 0 ? -azar(8, 30) * U : W + azar(8, 30) * U,
+        y: H * azar(0.12, 0.88),
+        a: lado < 0 ? azar(-0.3, 0.3) : Math.PI + azar(-0.3, 0.3),
+        v: (bando === 'r' ? 24 : 29) * U * azar(0.9, 1.1) * prof,
+        giro: bando === 'r' ? 1.9 : 2.5,
+        s: 5.8 * U * prof, hp: bando === 'r' ? 6 : 3,
+        cd: azar(0.8, 2), fase: azar(0, 10), objetivo: null, salida: null, canon: 0, tocado: 0
+      };
     }
 
-    // Unos disparos láser durante la pasada
-    var color = esTie ? '#33ff55' : '#ff3030';
-    for (var j = 0; j < 4; j++) {
-      setTimeout(function () {
-        var l = document.createElement('div');
-        l.className = 'laser';
-        var ang = aleatorio(0, 360);
-        l.style.left = aleatorio(25, 75) + 'vw';
-        l.style.top = aleatorio(25, 75) + 'vh';
-        l.style.setProperty('--c', color);
-        l.style.setProperty('--a', ang + 'deg');
-        l.style.setProperty('--dx', Math.cos(ang * Math.PI / 180) * 40 + 'vmin');
-        l.style.setProperty('--dy', Math.sin(ang * Math.PI / 180) * 40 + 'vmin');
-        document.body.appendChild(l);
-        setTimeout(function () { l.remove(); }, 800);
-      }, dur * 1000 * aleatorio(0.4, 0.85));
+    function iniciarBatalla() {
+      enBatalla = true;
+      finBatalla = reloj + azar(18, 26); refuerzo = reloj + 4;
+      var lado = Math.random() < 0.5 ? -1 : 1;
+      ladoR = lado;
+      var nr = 2 + Math.floor(Math.random() * 3), ni = 3 + Math.floor(Math.random() * 4);
+      for (var i = 0; i < nr; i++) naves.push(crearNave('r', lado));
+      for (var j = 0; j < ni; j++) naves.push(crearNave('i', -lado));
+      if (!destructor && Math.random() < 0.5) {
+        var dir = lado < 0 ? -1 : 1; // llega por el lado imperial
+        destructor = { x: dir > 0 ? -40 * U : W + 40 * U, y: H * azar(0.1, 0.3), L: 38 * U, v: 3.4 * U * dir, cd: 2 };
+      }
     }
-    setTimeout(pasarNave, aleatorio(22000, 45000));
-  }
-  setTimeout(pasarNave, 9000);
+
+    function terminarBatalla() {
+      enBatalla = false;
+      proxima = reloj + azar(4, 9);
+      naves.forEach(function (n) { n.salida = { x: n.x < W / 2 ? -40 * U : W + 40 * U, y: n.y + azar(-20, 20) * U }; });
+    }
+
+    function masCercano(n) {
+      var mejor = null, md = 1e9;
+      for (var i = 0; i < naves.length; i++) {
+        var o = naves[i];
+        if (o.b === n.b || o.muerta || o.salida) continue;
+        var d = Math.hypot(o.x - n.x, o.y - n.y);
+        if (d < md) { md = d; mejor = o; }
+      }
+      return mejor;
+    }
+
+    function disparar(n) {
+      var lat = n.b === 'r' ? 0.5 * n.s : 0.14 * n.s;
+      var lado = n.b === 'r' ? (n.canon++ % 2 ? 1 : -1) : 1;
+      var pares = n.b === 'r' ? [lado] : [-1, 1];
+      pares.forEach(function (sg) {
+        var ox = Math.cos(n.a + Math.PI / 2) * lat * sg, oy = Math.sin(n.a + Math.PI / 2) * lat * sg;
+        var vel = 115 * U, err = azar(-0.07, 0.07);
+        laseres.push({
+          x: n.x + ox + Math.cos(n.a) * n.s * 0.5, y: n.y + oy + Math.sin(n.a) * n.s * 0.5,
+          vx: Math.cos(n.a + err) * vel, vy: Math.sin(n.a + err) * vel, vida: 1.1, b: n.b,
+          c: n.b === 'r' ? '255,50,50' : '70,255,100', len: 3.6 * U * n.prof, ancho: 0.35 * U * n.prof
+        });
+      });
+    }
+
+    function turbolaser(x, y, objetivo) {
+      var a = Math.atan2(objetivo.y - y, objetivo.x - x) + azar(-0.05, 0.05), vel = 75 * U;
+      laseres.push({ x: x, y: y, vx: Math.cos(a) * vel, vy: Math.sin(a) * vel, vida: 2.2, b: 'i', c: '90,255,120', len: 6 * U, ancho: 0.6 * U });
+    }
+
+    function explotar(n) {
+      n.muerta = true;
+      explosiones.push({ x: n.x, y: n.y, t: 0, dur: 1.4, r: n.s * 2.4 });
+      for (var i = 0; i < 46; i++) {
+        var a = azar(0, TAU), v = azar(5, 38) * U;
+        chispas.push({
+          x: n.x, y: n.y, vx: Math.cos(a) * v + Math.cos(n.a) * n.v * 0.4, vy: Math.sin(a) * v + Math.sin(n.a) * n.v * 0.4,
+          vida: azar(0.5, 1.4), max: 1.4, c: ['255,220,140', '255,140,40', '255,255,230', '255,90,30'][i % 4], r: azar(0.2, 0.6) * U
+        });
+      }
+      for (var k = 0; k < 7; k++) {
+        var b2 = azar(0, TAU), v2 = azar(6, 18) * U;
+        chispas.push({ x: n.x, y: n.y, vx: Math.cos(b2) * v2, vy: Math.sin(b2) * v2, vida: azar(1.2, 2), max: 2, c: '150,155,165', r: azar(0.4, 0.9) * U, resto: true });
+      }
+    }
+
+    function impacto(x, y, c) {
+      for (var i = 0; i < 8; i++) {
+        var a = azar(0, TAU), v = azar(4, 16) * U;
+        chispas.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vida: azar(0.15, 0.4), max: 0.4, c: c, r: 0.25 * U });
+      }
+    }
+
+    function paso(dt) {
+      reloj += dt;
+      if (!enBatalla && naves.length === 0 && reloj > proxima) iniciarBatalla();
+      if (enBatalla) {
+        var hayR = naves.some(function (n) { return n.b === 'r' && !n.muerta; });
+        var hayI = naves.some(function (n) { return n.b === 'i' && !n.muerta; });
+        // Refuerzos: mientras dure la batalla, ningún bando se queda casi sin naves
+        if (reloj > refuerzo && reloj < finBatalla - 4) {
+          var cr = naves.filter(function (n) { return n.b === 'r' && !n.muerta; }).length;
+          var ci = naves.filter(function (n) { return n.b === 'i' && !n.muerta; }).length;
+          if (cr < 2) { for (var q = 0; q < 2; q++) naves.push(crearNave('r', ladoR)); refuerzo = reloj + 3; }
+          if (ci < 3) { for (var q2 = 0; q2 < 3; q2++) naves.push(crearNave('i', -ladoR)); refuerzo = reloj + 3; }
+        }
+        if (reloj > finBatalla || ((!hayR || !hayI) && reloj > finBatalla - 4)) terminarBatalla();
+      }
+
+      for (var i = naves.length - 1; i >= 0; i--) {
+        var n = naves[i];
+        if (n.muerta) { naves.splice(i, 1); continue; }
+        var tx, ty;
+        if (n.salida) { tx = n.salida.x; ty = n.salida.y; }
+        else {
+          if (!n.objetivo || n.objetivo.muerta || Math.random() < 0.004) n.objetivo = masCercano(n);
+          var o = n.objetivo;
+          if (o) { tx = o.x + Math.cos(o.a) * o.v * 0.35; ty = o.y + Math.sin(o.a) * o.v * 0.35; }
+          else { tx = W / 2; ty = H / 2; }
+          var m = 10 * U;
+          if (n.x < m || n.x > W - m || n.y < m || n.y > H - m) { tx = (tx + W / 2) / 2; ty = (ty + H / 2) / 2; }
+        }
+        var deseado = Math.atan2(ty - n.y, tx - n.x) + Math.sin(reloj * 1.3 + n.fase) * 0.4;
+        var dif = angulo(deseado - n.a), g = n.giro * dt;
+        n.a += Math.max(-g, Math.min(g, dif));
+        n.x += Math.cos(n.a) * n.v * dt; n.y += Math.sin(n.a) * n.v * dt;
+        n.tocado = Math.max(0, n.tocado - dt);
+
+        if (!n.salida && n.objetivo) {
+          n.cd -= dt;
+          var o2 = n.objetivo;
+          var ao = Math.atan2(o2.y - n.y, o2.x - n.x), dd = Math.hypot(o2.x - n.x, o2.y - n.y);
+          if (n.cd <= 0 && Math.abs(angulo(ao - n.a)) < 0.22 && dd < 60 * U) {
+            disparar(n);
+            n.cd = n.b === 'r' ? azar(0.35, 0.7) : azar(0.25, 0.55);
+          }
+        }
+        if (n.salida && (n.x < -35 * U || n.x > W + 35 * U || n.y < -35 * U || n.y > H + 35 * U)) naves.splice(i, 1);
+      }
+
+      if (destructor) {
+        var d = destructor;
+        d.x += d.v * dt;
+        d.cd -= dt;
+        if (d.cd <= 0 && enBatalla) {
+          var rebeldes = naves.filter(function (n) { return n.b === 'r' && !n.muerta; });
+          if (rebeldes.length) {
+            var dir = d.v > 0 ? 1 : -1;
+            var px = d.x + dir * azar(-0.35, 0.3) * d.L, py = d.y + azar(-0.15, 0.15) * d.L;
+            turbolaser(px, py, rebeldes[Math.floor(Math.random() * rebeldes.length)]);
+          }
+          d.cd = azar(0.2, 0.6);
+        }
+        if ((d.v > 0 && d.x > W + 45 * U) || (d.v < 0 && d.x < -45 * U)) destructor = null;
+      }
+
+      for (var j = laseres.length - 1; j >= 0; j--) {
+        var l = laseres[j];
+        l.x += l.vx * dt; l.y += l.vy * dt; l.vida -= dt;
+        if (l.vida <= 0) { laseres.splice(j, 1); continue; }
+        for (var k = 0; k < naves.length; k++) {
+          var nv = naves[k];
+          if (nv.b === l.b || nv.muerta) continue;
+          if (Math.hypot(l.x - nv.x, l.y - nv.y) < nv.s * 0.45) {
+            nv.hp--; nv.tocado = 0.15;
+            impacto(l.x, l.y, l.c);
+            if (nv.hp <= 0) explotar(nv);
+            l.vida = 0;
+            break;
+          }
+        }
+        if (l.vida <= 0) laseres.splice(j, 1);
+      }
+
+      for (var e = explosiones.length - 1; e >= 0; e--) { explosiones[e].t += dt; if (explosiones[e].t > explosiones[e].dur) explosiones.splice(e, 1); }
+      for (var c = chispas.length - 1; c >= 0; c--) {
+        var ch = chispas[c];
+        ch.x += ch.vx * dt; ch.y += ch.vy * dt; ch.vx *= 0.985; ch.vy *= 0.985; ch.vida -= dt;
+        if (ch.vida <= 0) chispas.splice(c, 1);
+      }
+    }
+
+    /* ---------- Dibujo de naves (vista cenital, morro hacia +x) ---------- */
+    function brilloMotor(x, y, r, color) {
+      var gr = bc.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, 'rgba(255,255,255,0.95)');
+      gr.addColorStop(0.3, 'rgba(' + color + ',0.8)');
+      gr.addColorStop(1, 'rgba(' + color + ',0)');
+      bc.fillStyle = gr;
+      bc.beginPath(); bc.arc(x, y, r, 0, TAU); bc.fill();
+    }
+
+    function xwing(s) {
+      bc.lineWidth = Math.max(1, s * 0.025); bc.strokeStyle = '#5d636c';
+      // alas en X abiertas
+      [-1, 1].forEach(function (sg) {
+        bc.fillStyle = '#c9cdd3';
+        bc.beginPath();
+        bc.moveTo(-0.44 * s, 0.08 * s * sg); bc.lineTo(-0.12 * s, 0.08 * s * sg);
+        bc.lineTo(-0.02 * s, 0.56 * s * sg); bc.lineTo(-0.34 * s, 0.56 * s * sg); bc.closePath();
+        bc.fill(); bc.stroke();
+        bc.fillStyle = '#c23b2c';
+        bc.beginPath();
+        bc.moveTo(-0.31 * s, 0.4 * s * sg); bc.lineTo(-0.15 * s, 0.4 * s * sg);
+        bc.lineTo(-0.11 * s, 0.48 * s * sg); bc.lineTo(-0.29 * s, 0.48 * s * sg); bc.closePath(); bc.fill();
+        // cañón
+        bc.strokeStyle = '#9aa0a8'; bc.lineWidth = Math.max(1, s * 0.04);
+        bc.beginPath(); bc.moveTo(-0.3 * s, 0.56 * s * sg); bc.lineTo(0.36 * s, 0.56 * s * sg); bc.stroke();
+        bc.strokeStyle = '#5d636c'; bc.lineWidth = Math.max(1, s * 0.025);
+      });
+      // fuselaje
+      var gf = bc.createLinearGradient(0, -0.08 * s, 0, 0.08 * s);
+      gf.addColorStop(0, '#f2f3f5'); gf.addColorStop(0.5, '#c4c8ce'); gf.addColorStop(1, '#868c95');
+      bc.fillStyle = gf;
+      bc.beginPath();
+      bc.moveTo(-0.5 * s, -0.08 * s); bc.lineTo(0.34 * s, -0.055 * s); bc.lineTo(0.64 * s, 0);
+      bc.lineTo(0.34 * s, 0.055 * s); bc.lineTo(-0.5 * s, 0.08 * s); bc.closePath();
+      bc.fill(); bc.stroke();
+      bc.fillStyle = '#1b2129';
+      bc.beginPath(); bc.ellipse(0.1 * s, 0, 0.11 * s, 0.035 * s, 0, 0, TAU); bc.fill();
+      bc.fillStyle = '#3b6fd8';
+      bc.beginPath(); bc.arc(-0.15 * s, 0, 0.04 * s, 0, TAU); bc.fill();
+      bc.globalCompositeOperation = 'lighter';
+      [-0.17, 0.17].forEach(function (yy) { brilloMotor(-0.47 * s, yy * s, 0.13 * s, '255,140,60'); });
+      bc.globalCompositeOperation = 'source-over';
+    }
+
+    function tie(s) {
+      bc.lineWidth = Math.max(1, s * 0.025);
+      // soportes y alas (vistas de canto)
+      bc.fillStyle = '#5f6672';
+      bc.fillRect(-0.05 * s, -0.36 * s, 0.1 * s, 0.72 * s);
+      [-1, 1].forEach(function (sg) {
+        var y = 0.38 * s * sg;
+        bc.fillStyle = '#262a31'; bc.strokeStyle = '#8a929e';
+        bc.beginPath();
+        bc.moveTo(-0.36 * s, y); bc.lineTo(-0.29 * s, y - 0.055 * s); bc.lineTo(0.29 * s, y - 0.055 * s);
+        bc.lineTo(0.36 * s, y); bc.lineTo(0.29 * s, y + 0.055 * s); bc.lineTo(-0.29 * s, y + 0.055 * s); bc.closePath();
+        bc.fill(); bc.stroke();
+      });
+      var gb = bc.createRadialGradient(-0.05 * s, -0.06 * s, 0, 0, 0, 0.19 * s);
+      gb.addColorStop(0, '#c3c9d2'); gb.addColorStop(1, '#4a505a');
+      bc.fillStyle = gb;
+      bc.beginPath(); bc.arc(0, 0, 0.18 * s, 0, TAU); bc.fill();
+      bc.fillStyle = '#10141a';
+      bc.beginPath(); bc.arc(0.09 * s, 0, 0.085 * s, 0, TAU); bc.fill();
+      bc.globalCompositeOperation = 'lighter';
+      brilloMotor(-0.19 * s, 0, 0.09 * s, '255,120,90');
+      bc.globalCompositeOperation = 'source-over';
+    }
+
+    function dibujarDestructor(d) {
+      var L = d.L;
+      bc.save();
+      bc.translate(d.x, d.y);
+      if (d.v < 0) bc.rotate(Math.PI);
+      bc.globalAlpha = 0.9;
+      bc.fillStyle = '#b4b9c1';
+      bc.beginPath(); bc.moveTo(0.55 * L, 0); bc.lineTo(-0.45 * L, -0.38 * L); bc.lineTo(-0.45 * L, 0); bc.closePath(); bc.fill();
+      bc.fillStyle = '#767c86';
+      bc.beginPath(); bc.moveTo(0.55 * L, 0); bc.lineTo(-0.45 * L, 0.38 * L); bc.lineTo(-0.45 * L, 0); bc.closePath(); bc.fill();
+      bc.fillStyle = '#9ba1aa';
+      bc.beginPath(); bc.moveTo(0.42 * L, 0); bc.lineTo(-0.42 * L, -0.07 * L); bc.lineTo(-0.42 * L, 0.07 * L); bc.closePath(); bc.fill();
+      bc.strokeStyle = 'rgba(40,44,52,0.55)'; bc.lineWidth = Math.max(1, L * 0.004);
+      for (var i = 1; i < 6; i++) {
+        var f = i / 6;
+        bc.beginPath();
+        bc.moveTo(0.55 * L - f * 0.95 * L, -0.38 * L * f); bc.lineTo(0.55 * L - f * 0.95 * L, 0.38 * L * f); bc.stroke();
+      }
+      bc.fillStyle = '#c3c8cf';
+      bc.fillRect(-0.44 * L, -0.06 * L, 0.13 * L, 0.12 * L);
+      bc.fillStyle = '#8a9099';
+      bc.fillRect(-0.4 * L, -0.03 * L, 0.06 * L, 0.06 * L);
+      bc.beginPath(); bc.arc(-0.35 * L, -0.045 * L, 0.018 * L, 0, TAU); bc.arc(-0.35 * L, 0.045 * L, 0.018 * L, 0, TAU); bc.fill();
+      bc.globalCompositeOperation = 'lighter';
+      [-0.14, 0, 0.14].forEach(function (yy) { brilloMotor(-0.47 * L, yy * L, 0.07 * L, '120,180,255'); });
+      bc.restore();
+      bc.globalCompositeOperation = 'source-over';
+    }
+
+    function dibujar() {
+      bc.clearRect(0, 0, W, H);
+      if (destructor) dibujarDestructor(destructor);
+
+      naves.forEach(function (n) {
+        bc.save();
+        bc.translate(n.x, n.y); bc.rotate(n.a);
+        if (n.b === 'r') xwing(n.s); else tie(n.s);
+        if (n.tocado > 0) {
+          bc.globalCompositeOperation = 'lighter';
+          brilloMotor(0, 0, n.s * 0.6, '255,180,80');
+        }
+        bc.restore();
+      });
+
+      bc.globalCompositeOperation = 'lighter';
+      laseres.forEach(function (l) {
+        var vl = Math.hypot(l.vx, l.vy), ux = l.vx / vl, uy = l.vy / vl;
+        bc.lineCap = 'round';
+        bc.strokeStyle = 'rgba(' + l.c + ',0.35)'; bc.lineWidth = l.ancho * 4;
+        bc.beginPath(); bc.moveTo(l.x - ux * l.len, l.y - uy * l.len); bc.lineTo(l.x, l.y); bc.stroke();
+        bc.strokeStyle = 'rgba(' + l.c + ',0.9)'; bc.lineWidth = l.ancho * 1.8;
+        bc.stroke();
+        bc.strokeStyle = 'rgba(255,255,255,0.95)'; bc.lineWidth = l.ancho * 0.7;
+        bc.stroke();
+      });
+
+      explosiones.forEach(function (e) {
+        var p = e.t / e.dur;
+        var r = e.r * (0.3 + p * 1.2);
+        var gr = bc.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
+        var a = Math.pow(1 - p, 1.6);
+        gr.addColorStop(0, 'rgba(255,255,235,' + a + ')');
+        gr.addColorStop(0.25, 'rgba(255,200,90,' + a * 0.9 + ')');
+        gr.addColorStop(0.6, 'rgba(255,90,20,' + a * 0.5 + ')');
+        gr.addColorStop(1, 'rgba(120,20,0,0)');
+        bc.fillStyle = gr; bc.beginPath(); bc.arc(e.x, e.y, r, 0, TAU); bc.fill();
+        bc.strokeStyle = 'rgba(190,220,255,' + (1 - p) * 0.8 + ')';
+        bc.lineWidth = Math.max(1, (1 - p) * 0.8 * U);
+        bc.beginPath(); bc.arc(e.x, e.y, e.r * p * 2, 0, TAU); bc.stroke();
+      });
+
+      chispas.forEach(function (c) {
+        var a = Math.max(0, c.vida / c.max);
+        if (c.resto) {
+          bc.globalCompositeOperation = 'source-over';
+          bc.fillStyle = 'rgba(' + c.c + ',' + a + ')';
+          bc.fillRect(c.x - c.r / 2, c.y - c.r / 2, c.r, c.r);
+          bc.globalCompositeOperation = 'lighter';
+          bc.fillStyle = 'rgba(255,140,40,' + a * 0.6 + ')';
+          bc.beginPath(); bc.arc(c.x, c.y, c.r * 0.6, 0, TAU); bc.fill();
+        } else {
+          bc.fillStyle = 'rgba(' + c.c + ',' + a + ')';
+          bc.beginPath(); bc.arc(c.x, c.y, c.r * (0.5 + a), 0, TAU); bc.fill();
+        }
+      });
+      bc.globalCompositeOperation = 'source-over';
+    }
+
+    var antes = performance.now();
+    function bucle(ahora) {
+      var dt = Math.min(0.05, (ahora - antes) / 1000);
+      antes = ahora;
+      paso(dt);
+      dibujar();
+      requestAnimationFrame(bucle);
+    }
+    requestAnimationFrame(bucle);
+  })();
 
   /* ================= Pantalla completa ================= */
   var ayuda = $('ayuda');
