@@ -250,9 +250,98 @@
   @keyframes disparo { from { transform: translate(0, 0) rotate(var(--a)) scaleX(0.4); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scaleX(1.4); opacity: 0; } }
 
   /* ---------- Destello del salto ---------- */
-  #destello { position: fixed; inset: 0; z-index: 5; background: #dff6ff; opacity: 0; pointer-events: none; }
-  #destello.activo { animation: destello 1.4s ease-out; }
-  @keyframes destello { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
+  /* ---------- Salto al hiperespacio (3,6 s: carga 0–0,6 · salto 0,6–2,6 · salida 2,6–3,6) ---------- */
+  #mundo, #temblor { position: fixed; inset: 0; z-index: 2; }
+  #temblor { position: absolute; z-index: auto; }
+  #destello {
+    position: fixed; inset: 0; z-index: 6; opacity: 0; pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, #ffffff 0%, #e4f4ff 35%, #8cc4ff 80%, #4a7dff 100%);
+  }
+  #hiper { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0; overflow: hidden; }
+  .tunel {
+    position: absolute; inset: -50%; mix-blend-mode: screen; filter: blur(1.5px);
+    background: repeating-conic-gradient(from 0deg, rgba(90, 160, 255, 0) 0deg 1.2deg, rgba(150, 210, 255, 0.6) 1.7deg, rgba(90, 160, 255, 0) 2.4deg 3.5deg);
+    -webkit-mask-image: radial-gradient(circle, transparent 3%, #000 18%, #000 45%, transparent 70%);
+            mask-image: radial-gradient(circle, transparent 3%, #000 18%, #000 45%, transparent 70%);
+  }
+  .tunel.t2 {
+    background: repeating-conic-gradient(from 1deg, rgba(170, 100, 255, 0) 0deg 2.5deg, rgba(200, 130, 255, 0.4) 3deg, rgba(170, 100, 255, 0) 3.6deg 6deg);
+  }
+  .vineta {
+    position: absolute; inset: 0;
+    box-shadow: inset 0 0 18vmin 5vmin rgba(60, 140, 255, 0.85), inset 0 0 45vmin rgba(130, 80, 255, 0.5);
+  }
+  #nucleoLuz {
+    position: fixed; left: 50%; top: 50%; width: 60vmin; height: 60vmin; margin: -30vmin 0 0 -30vmin;
+    border-radius: 50%; z-index: 1; opacity: 0; pointer-events: none; mix-blend-mode: screen;
+    background: radial-gradient(circle, #fff 0%, rgba(200, 235, 255, 0.95) 7%, rgba(90, 160, 255, 0.5) 24%, rgba(80, 70, 255, 0.18) 45%, transparent 70%);
+  }
+  #ondas { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+  #ondas i {
+    position: absolute; left: 50%; top: 50%; width: 40vmin; height: 40vmin; margin: -20vmin 0 0 -20vmin;
+    border-radius: 50%; border: 0.5vmin solid rgba(210, 240, 255, 0.95); opacity: 0;
+    box-shadow: 0 0 3vmin rgba(120, 190, 255, 0.95), inset 0 0 3vmin rgba(120, 190, 255, 0.95), 0 0 9vmin rgba(110, 90, 255, 0.6);
+  }
+
+  body.hiper #hiper { animation: hiperCapa 3.6s ease forwards; }
+  body.hiper .tunel { animation: girar 3.6s linear forwards; }
+  body.hiper .tunel.t2 { animation-name: girar2; }
+  body.hiper #nucleoLuz { animation: nucleo 3.6s ease forwards; }
+  body.hiper #ondas i { animation: onda 1.4s cubic-bezier(.1, .7, .3, 1) forwards; }
+  body.hiper #ondas i:nth-child(1) { animation-delay: 0.55s; animation-duration: 1s; }
+  body.hiper #ondas i:nth-child(2) { animation-delay: 2.6s; }
+  body.hiper #ondas i:nth-child(3) { animation-delay: 2.78s; }
+  body.hiper #ondas i:nth-child(4) { animation-delay: 2.98s; }
+  body.hiper #destello { animation: destello 1.3s ease-out 2.55s; }
+  body.hiper #mundo { animation: empuje 3.6s ease-in-out; }
+  body.hiper #temblor { animation: temblor 3.6s linear; }
+  body.hiper .juan { animation: auraJuan 3.6s ease; }
+  body.hiper .hora { animation: auraHora 3.6s ease; }
+  body.hiper .espadas { animation: auraSables 3.6s ease; }
+
+  @keyframes hiperCapa { 0% { opacity: 0; } 16% { opacity: 0.35; } 28% { opacity: 1; } 70% { opacity: 1; } 76%, 100% { opacity: 0; } }
+  @keyframes girar { from { transform: rotate(0deg) scale(0.6); } to { transform: rotate(45deg) scale(1.7); } }
+  @keyframes girar2 { from { transform: rotate(0deg) scale(0.7); } to { transform: rotate(-35deg) scale(1.8); } }
+  @keyframes nucleo {
+    0% { opacity: 0; transform: scale(0.1); } 16% { opacity: 0.95; transform: scale(0.3); }
+    24% { opacity: 0.55; transform: scale(0.6); } 70% { opacity: 0.85; transform: scale(0.95); }
+    74% { opacity: 1; transform: scale(3.2); } 92%, 100% { opacity: 0; transform: scale(4.5); }
+  }
+  @keyframes onda { 0% { opacity: 1; transform: scale(0.05); } 100% { opacity: 0; transform: scale(5.5); } }
+  @keyframes destello { 0% { opacity: 0; } 10% { opacity: 0.95; } 100% { opacity: 0; } }
+  @keyframes empuje {
+    0% { transform: none; filter: none; }
+    16% { transform: scale(0.95); filter: brightness(0.8); }
+    24% { transform: scale(1.02); filter: brightness(1.3); }
+    68% { transform: scale(1.14); filter: brightness(1.7) saturate(1.4) blur(2.5px); }
+    73% { transform: scale(0.96); filter: brightness(2.2); }
+    82% { transform: scale(1.015); filter: brightness(1.15); }
+    100% { transform: none; filter: none; }
+  }
+  @keyframes temblor {
+    0%, 17%, 72%, 100% { transform: none; }
+    20% { transform: translate(0.3vmin, -0.2vmin); } 24% { transform: translate(-0.4vmin, 0.3vmin); }
+    28% { transform: translate(0.35vmin, 0.4vmin); } 32% { transform: translate(-0.25vmin, -0.4vmin); }
+    36% { transform: translate(0.45vmin, 0.1vmin); } 40% { transform: translate(-0.35vmin, 0.35vmin); }
+    44% { transform: translate(0.2vmin, -0.45vmin); } 48% { transform: translate(-0.45vmin, -0.1vmin); }
+    52% { transform: translate(0.4vmin, 0.4vmin); } 56% { transform: translate(-0.3vmin, -0.3vmin); }
+    60% { transform: translate(0.5vmin, -0.2vmin); } 64% { transform: translate(-0.5vmin, 0.3vmin); }
+    68% { transform: translate(0.4vmin, 0.5vmin); }
+    74% { transform: translate(0, 1.4vmin); } 77% { transform: translate(0, -0.7vmin); } 80% { transform: translate(0, 0.25vmin); } 83% { transform: none; }
+  }
+  @keyframes auraJuan {
+    0%, 20% { text-shadow: 0 0 2.5vmin rgba(255, 232, 31, 0.35); }
+    50% { text-shadow: -0.6vmin 0 rgba(255, 40, 90, 0.7), 0.6vmin 0 rgba(40, 200, 255, 0.7), 0 0 4vmin rgba(255, 232, 31, 0.7); }
+    74% { text-shadow: 0 0 1vmin #fff, 0 0 4vmin #ffe81f, 0 0 10vmin #ffb000, 0 0 22vmin rgba(255, 190, 0, 0.75); }
+    100% { text-shadow: 0 0 2.5vmin rgba(255, 232, 31, 0.35); }
+  }
+  @keyframes auraHora {
+    0%, 20% { text-shadow: 0 0 1vmin rgba(143, 243, 255, 0.9), 0 0 3.5vmin rgba(75, 213, 238, 0.6); }
+    50% { text-shadow: -0.8vmin 0 rgba(255, 40, 120, 0.75), 0.8vmin 0 rgba(40, 220, 255, 0.85), 0 0 5vmin rgba(75, 213, 238, 0.9); }
+    74% { text-shadow: 0 0 1vmin #fff, 0 0 3vmin #fff, 0 0 8vmin #8ff3ff, 0 0 18vmin #3a8bff, 0 0 30vmin rgba(110, 90, 255, 0.8); }
+    100% { text-shadow: 0 0 1vmin rgba(143, 243, 255, 0.9), 0 0 3.5vmin rgba(75, 213, 238, 0.6); }
+  }
+  @keyframes auraSables { 0%, 20%, 100% { filter: none; } 50% { filter: brightness(1.5); } 74% { filter: brightness(2.6) saturate(1.5); } }
 
   #ayuda {
     position: fixed; z-index: 6; left: 50%; bottom: 2vmin; transform: translateX(-50%);
@@ -267,6 +356,9 @@
 <body>
 <canvas id="estrellas"></canvas>
 <div class="nebulosa"></div>
+<div id="hiper" aria-hidden="true"><div class="tunel"></div><div class="tunel t2"></div><div class="vineta"></div></div>
+<div id="nucleoLuz" aria-hidden="true"></div>
+<div id="mundo"><div id="temblor">
 <div class="planeta"></div>
 
 <!-- Estación espacial: se dibuja por código en un canvas -->
@@ -362,6 +454,8 @@
 </section>
 
 <div id="mini" class="oculta"><div class="h" id="miniHora">00:00</div><div class="f" id="miniFecha">&nbsp;</div></div>
+</div></div>
+<div id="ondas" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <div id="destello"></div>
 <div id="ayuda">Doble clic: pantalla completa</div>
 
@@ -426,7 +520,8 @@
       z: z === undefined ? Math.random() : z,
       fase: Math.random() * Math.PI * 2,
       ritmo: 0.5 + Math.random() * 2.5,
-      tono: Math.random() < 0.12 ? '190,225,255' : (Math.random() < 0.06 ? '255,225,190' : '255,255,255')
+      tono: Math.random() < 0.12 ? '190,225,255' : (Math.random() < 0.06 ? '255,225,190' : '255,255,255'),
+      aura: ['120,180,255', '170,140,255', '140,220,255', '210,230,255'][Math.floor(Math.random() * 4)]
     };
   }
   function redimensionar() {
@@ -446,11 +541,23 @@
   function dibujar(ahora) {
     var dt = Math.min(50, ahora - ultimo) / 16.67;
     ultimo = ahora;
-    velocidad += (velObjetivo - velocidad) * (velObjetivo > velocidad ? 0.035 : 0.05) * dt;
+    velocidad += (velObjetivo - velocidad) * 0.07 * dt;
     var hiper = velocidad > 0.004;
 
-    ctx.fillStyle = hiper ? 'rgba(0,0,8,0.6)' : '#000006';
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = hiper ? 'rgba(0,0,12,0.42)' : '#000006';
     ctx.fillRect(0, 0, w, h);
+    if (hiper) {
+      // Resplandor central del túnel
+      var k = Math.min(1, velocidad / 0.06);
+      var gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.45);
+      gr.addColorStop(0, 'rgba(220,240,255,' + 0.55 * k + ')');
+      gr.addColorStop(0.15, 'rgba(90,150,255,' + 0.28 * k + ')');
+      gr.addColorStop(0.5, 'rgba(90,60,220,' + 0.10 * k + ')');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gr; ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'lighter';
+    }
     var t = ahora / 1000;
 
     for (var i = 0; i < estrellas.length; i++) {
@@ -458,16 +565,26 @@
       var zAnt = e.z;
       e.z -= velocidad * dt;
       if (e.z <= 0.02) { estrellas[i] = nuevaEstrella(1); continue; }
+      if (e.z > 1) e.z = 1;
       var sx = cx + (e.x / e.z) * foco, sy = cy + (e.y / e.z) * foco;
       if (sx < -50 || sx > w + 50 || sy < -50 || sy > h + 50) { estrellas[i] = nuevaEstrella(1); continue; }
       var brillo = Math.min(1, (1 - e.z) * 1.3);
       var tw = reducido ? 1 : 0.65 + 0.35 * Math.sin(t * e.ritmo + e.fase);
       var tam = (1 - e.z) * 2.2 + 0.3;
-      if (velocidad > 0.0015) {
-        var zCola = Math.min(1, zAnt + velocidad * 14);
+      if (Math.abs(velocidad) > 0.0015) {
+        var zCola = Math.min(1.2, zAnt + Math.abs(velocidad) * 14);
         var px = cx + (e.x / zCola) * foco, py = cy + (e.y / zCola) * foco;
-        ctx.strokeStyle = 'rgba(' + (hiper ? '200,235,255' : e.tono) + ',' + (hiper ? brillo * 0.7 : brillo) + ')';
-        ctx.lineWidth = hiper ? tam * 0.6 : tam;
+        if (hiper) {
+          // Halo de color ancho + núcleo blanco fino
+          ctx.strokeStyle = 'rgba(' + e.aura + ',' + brillo * 0.22 + ')';
+          ctx.lineWidth = tam * 4.5;
+          ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,255,255,' + brillo * 0.85 + ')';
+          ctx.lineWidth = tam * 0.7;
+        } else {
+          ctx.strokeStyle = 'rgba(' + e.tono + ',' + brillo + ')';
+          ctx.lineWidth = tam;
+        }
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(sx, sy); ctx.stroke();
       } else {
         ctx.fillStyle = 'rgba(' + e.tono + ',' + (brillo * tw) + ')';
@@ -478,14 +595,17 @@
   }
   requestAnimationFrame(dibujar);
 
-  var destello = document.getElementById('destello');
-  function saltoHiperespacio(duracion) {
-    if (reducido) return;
-    velObjetivo = 0.045;
-    setTimeout(function () {
-      velObjetivo = VEL_BASE;
-      destello.classList.remove('activo'); void destello.offsetWidth; destello.classList.add('activo');
-    }, duracion || 2200);
+  // Secuencia completa: carga (las estrellas retroceden), salto y salida con destello y ondas.
+  var saltando = false;
+  function saltoHiperespacio() {
+    if (reducido || saltando) return;
+    saltando = true;
+    var b = document.body;
+    b.classList.remove('hiper'); void b.offsetWidth; b.classList.add('hiper');
+    velObjetivo = -0.004;
+    setTimeout(function () { velObjetivo = 0.065; }, 600);
+    setTimeout(function () { velObjetivo = VEL_BASE; velocidad = 0.003; }, 2600);
+    setTimeout(function () { b.classList.remove('hiper'); saltando = false; }, 3700);
   }
 
   /* ================= Estación espacial (render procedural, una sola vez) ================= */
@@ -608,8 +728,11 @@
     var hh = d.getHours();
     $('saludo').textContent = hh >= 6 && hh < 14 ? 'Buenos días, padawans' : (hh >= 14 && hh < 21 ? 'Buenas tardes, padawans' : 'Buenas noches, padawans');
 
-    // Salto al hiperespacio a cada hora en punto
-    if (M === '00' && S === 0) saltoHiperespacio(2500);
+    // Salto al hiperespacio cada minuto: la salida coincide con el cambio de minuto
+    if (S === 57) {
+      var falta = 60000 - (S * 1000 + d.getMilliseconds());
+      setTimeout(saltoHiperespacio, Math.max(0, falta - 2650));
+    }
   }
   actualizar();
   setInterval(actualizar, 250);
@@ -653,11 +776,11 @@
 
   function escenaApertura() {
     if (reducido) { setTimeout(escenaApertura, 75000); return; }
-    saltoHiperespacio(2000);
+    saltoHiperespacio();
     setTimeout(function () {
       ocultar(principal); estacion.style.opacity = 0;
-    }, 1200);
-    setTimeout(function () { mostrar(intro); reiniciar(intro, 'activa'); }, 2600);
+    }, 2500);
+    setTimeout(function () { mostrar(intro); reiniciar(intro, 'activa'); }, 3300);
     setTimeout(function () {
       ocultar(intro); intro.classList.remove('activa');
       mostrar(logo); reiniciar(logo, 'activa');
@@ -666,12 +789,12 @@
       texto.style.setProperty('--fin', -(texto.offsetHeight + window.innerHeight * 2.2) + 'px');
       reiniciar(crawl, 'activa');
       mostrar(mini);
-    }, 8600);
-    setTimeout(function () { ocultar(logo); logo.classList.remove('activa'); }, 18100);
+    }, 9300);
+    setTimeout(function () { ocultar(logo); logo.classList.remove('activa'); }, 18800);
     setTimeout(function () {
-      saltoHiperespacio(1800);
-      setTimeout(function () { ocultar(crawl); crawl.classList.remove('activa'); escenaPrincipal(); }, 1500);
-    }, 8600 + 58000);
+      saltoHiperespacio();
+      setTimeout(function () { ocultar(crawl); crawl.classList.remove('activa'); escenaPrincipal(); }, 2550);
+    }, 9300 + 58000);
   }
 
   escenaPrincipal();
