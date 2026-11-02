@@ -10,6 +10,7 @@ pendientes que no se deben tomar sin el equipo).
 python -m pip install -e ".[dev,display]"
 ruff check . && ruff format --check .
 SDL_VIDEODRIVER=dummy pytest
+./scripts/test_db.sh        # migraciones + pgTAP en PostgreSQL temporal (no como root)
 ```
 
 Galería: `python -m vinculo_frame demo-photos --with-broken` y después
@@ -25,6 +26,8 @@ probar la pantalla completa con `--max-seconds` y `--screenshot`.
 - Todo aviso saliente pasa por el outbox de `LocalStore`. Nada local depende de la nube.
 - Altas, borrados y retiradas de fotos siempre a través de `PhotoLibrary` (`library.py`).
 - Migraciones: añadir un paso nuevo a `storage._MIGRATIONS`; nunca editar uno publicado.
+  En Supabase igual: un archivo nuevo en `supabase/migrations/`, con sus pruebas pgTAP.
+- Supabase: RLS en todas las tablas, nada para `anon`, permisos por columna (D-17).
 - Nunca borrar automáticamente fotos sin copia remota, con "me gusta" o recientes (D-14).
 - Nunca: secretos reales, fotografías reales, `service_role` en la Pi o el navegador,
   puertos abiertos en la Pi, migraciones remotas o mensajes reales sin autorización.

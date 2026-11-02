@@ -54,28 +54,39 @@
 - El panel web exige inicio de sesión (Supabase Auth) y solo ve los marcos de
   `frame_admins`.
 
-## Diseño de RLS (borrador para la fase 4)
+## RLS y permisos (fase 4, probado en local)
 
-RLS activado en **todas** las tablas, sin políticas para `anon`.
+Migración `supabase/migrations/20261102090000_esquema_inicial.sql`. RLS
+activado en **todas** las tablas; `anon` no tiene permisos ni políticas.
+Además de RLS (qué filas), los permisos por columna limitan qué campos puede
+escribir `authenticated` (D-17).
 
 | Tabla | Administrador del marco | Usuario dispositivo del marco |
 |---|---|---|
 | `frames` | leer los suyos | leer el suyo |
 | `frame_admins` | leer las filas de sus marcos | — |
-| `family_members` | leer/crear/editar/desactivar en sus marcos | leer los de su marco |
-| `photos` | leer/borrar en sus marcos | leer y actualizar `liked_at` en su marco |
-| `sos_alerts` | leer, marcar resuelta | crear y leer en su marco |
+| `family_members` | leer; crear (`frame_id`, `display_name`); editar `display_name` y `active` | leer los de su marco |
+| `photos` | leer y borrar en sus marcos | leer; actualizar solo `liked_at` |
+| `sos_alerts` | leer; resolver una vez, firmando con su propio usuario | crear (`id`, `frame_id`, `triggered_at`) y leer |
 | `sos_acks` | leer | leer |
-| Storage `photos/<frame_id>/…` | leer/borrar en sus marcos | leer en su marco |
+| Storage `photos/<frame_id>/…` | leer y borrar en sus marcos | leer en su marco |
+
+Nadie con sesión normal puede: crear marcos o administradores, escribir
+`telegram_user_id`, borrar familiares (se desactivan), insertar fotos,
+crear confirmaciones SOS ni mover filas de un marco a otro. Eso lo harán
+funciones del servidor con `service_role` (bot, vinculación, alta de marcos).
 
 Notas:
-- Escrituras del bot (fotos entrantes, `sos_acks` desde Telegram) las hace la
-  Edge Function con `service_role`, tras validar al remitente.
-- Ayudante previsto: función `is_frame_admin(frame_id)` `SECURITY DEFINER`
-  con `search_path` fijo, para no repetir subconsultas en cada política.
-- Las políticas se probarán con usuarios de prueba (admin de A no ve el
-  marco B; el dispositivo A no ve el marco B; `anon` no ve nada) antes de
-  aplicar cualquier migración remota.
+- Ayudantes `private.is_frame_admin`, `private.is_frame_device`
+  (`SECURITY DEFINER`, `search_path` vacío) y `private.frame_id_from_path`,
+  que devuelve `NULL` ante una ruta mal formada. El esquema `private` no se
+  expone en la API y `anon` no puede usarlo.
+- Integridad en la propia base de datos: el remitente de una foto y quien
+  confirma una alerta deben ser familiares **del mismo marco** (claves
+  foráneas compuestas); la ruta de la foto empieza por su `frame_id`.
+- El bucket `photos` es privado, admite solo JPEG, PNG y WebP y hasta 10 MB.
+- Probado con 103 pruebas pgTAP (`supabase/tests/database/`). **No** se ha
+  aplicado en ningún proyecto remoto.
 
 ## Hardware
 

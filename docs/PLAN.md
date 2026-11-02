@@ -43,7 +43,7 @@ desde Claude en la nube.
   debe seguir usando solo la biblioteca estándar.
 - **HW:** ninguno para la lógica; la pantalla real para validar legibilidad.
 
-## 3. Persistencia local — *completada en simulación; pendiente de CI y de la Pi*
+## 3. Persistencia local — *completada en simulación; pendiente de validar en la Pi*
 - **Objetivos:** borrado seguro de fotos (archivo + fila), límite de espacio
   con política de conservación explícita, estado de sincronización,
   migración v1→v2 transaccional, integridad, reparación y copia de seguridad.
@@ -70,22 +70,39 @@ desde Claude en la nube.
     creados por `PhotoLibrary`.
   - ✔ Revisión final: corregidos 9 fallos encontrados al revisar (ver
     PRUEBAS.md), cada uno con su prueba.
+  - ✔ GitHub Actions en verde (commit `fa33e07`).
   - ✘ Sin probar: tarjeta SD real, cortes de luz reales, varios procesos
     escribiendo a la vez y rendimiento de `storage --deep` en la Pi.
 - **Pendiente:** fijar el límite real según la tarjeta SD (inventario) y las
   decisiones legales de D-12. La retirada automática no actuará hasta la fase 6.
 - **HW:** ninguno.
 
-## 4. Supabase: esquema y permisos
+## 4. Supabase: esquema y permisos — *completada en local; sin proyecto remoto*
 - **Objetivos:** migraciones SQL versionadas y políticas RLS (SEGURIDAD.md);
   bucket privado; usuario dispositivo (D-06).
-- **Archivos:** `supabase/migrations/*.sql`, `supabase/tests/*.sql` (pgTAP),
-  `supabase/config.toml`.
-- **Aceptación:** con Supabase local (CLI + Docker en CI): `anon` no lee nada;
-  admin de A no ve B; dispositivo A no ve B ni puede borrar familiares.
+- **Archivos:** `supabase/config.toml` (generado con `supabase init`),
+  `supabase/migrations/20261102090000_esquema_inicial.sql`,
+  `supabase/tests/database/*.test.sql` (pgTAP), `scripts/test_db.sh` y
+  `scripts/db/supabase_minimo.sql` (D-16).
+- **Aceptación:**
+  - ✔ `anon` no tiene permisos ni políticas; un usuario autenticado sin marco
+    no ve nada.
+  - ✔ Admin de A no ve ni cambia nada de B; dispositivo A no ve B, no borra ni
+    edita familiares, solo marca "me gusta" y crea alertas de su marco.
+  - ✔ Bucket `photos` privado: cada uno ve solo `<su frame_id>/…`.
+  - ✔ Integridad: remitente y confirmaciones del mismo marco, ruta de la foto
+    con el id de su marco, hash y formato válidos, una foto por hash y marco.
+  - ✔ 103 pruebas pgTAP en PostgreSQL 16 con la imitación mínima de Supabase;
+    tres errores introducidos a propósito en la migración se detectan.
+  - ✘ Pendiente de comprobar en GitHub Actions: las mismas pruebas con la CLI
+    oficial (`supabase test db`). Desde la sesión en la nube no se pudieron
+    descargar las imágenes de Supabase.
+- **No incluido (decisión del equipo):** crear el proyecto remoto, región y
+  plazos de conservación (D-12), alta de marcos y administradores desde el
+  panel (por ahora solo con `service_role`), resolver alertas desde el marco
+  (D-08).
 - **HW:** ninguno. **Requiere autorización** para crear el proyecto
   remoto y aplicar migraciones (no se hará sin permiso explícito).
-- **Decisiones previas:** D-07, D-12 (región y retención).
 
 ## 5. Telegram y autorización de familiares
 - **Objetivos:** recibir fotos solo de familiares registrados; vinculación

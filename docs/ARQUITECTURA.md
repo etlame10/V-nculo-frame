@@ -127,16 +127,21 @@ LocalStore.list_photos ──► Playlist ──► GalleryController ──► 
 5. Al pulsar "me gusta" se marca `liked_at` localmente y se encola el aviso
    al remitente.
 
-## Esquema remoto (borrador, no aplicado)
+## Esquema remoto (fase 4, probado en local, no aplicado en remoto)
 
-Se concretará en la fase 4 como migración versionada en `supabase/migrations/`.
+Migración `supabase/migrations/20261102090000_esquema_inicial.sql`:
 
-- `frames` (id, nombre, `device_user_id` → usuario Auth del marco)
-- `frame_admins` (frame_id, user_id) — quién gestiona cada marco
-- `family_members` (id, frame_id, display_name, telegram_user_id, active)
-- `photos` (id, frame_id, sender_member_id, storage_path, sha256, received_at, liked_at);
-  su `id` es el `remote_id` local
-- `sos_alerts` (id, frame_id, triggered_at, resolved_at, resolved_by)
-- `sos_acks` (alert_id, member_id, acked_at)
+```
+auth.users ◄── frames.device_user_id          (usuario del marco, D-06)
+auth.users ◄── frame_admins ──► frames        (quién gestiona cada marco)
+frames ◄── family_members (telegram_user_id NULL hasta vincular)
+frames ◄── photos ──► family_members          (mismo marco; ruta <frame_id>/<sha256>.<ext>)
+frames ◄── sos_alerts ◄── sos_acks ──► family_members   (mismo marco)
+Storage: bucket privado "photos"
+```
 
-Las políticas RLS se describen en [SEGURIDAD.md](SEGURIDAD.md).
+- `photos.id` es el `remote_id` de la base de datos local (D-15).
+- `sos_alerts.id` lo genera el marco (uuid4 de `sos.py`): reenviar la misma
+  alerta tras un corte da un conflicto de clave, no un duplicado.
+- Permisos y RLS en [SEGURIDAD.md](SEGURIDAD.md); pruebas en
+  [PRUEBAS.md](PRUEBAS.md).

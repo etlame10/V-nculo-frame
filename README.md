@@ -7,7 +7,7 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 > El SOS es una función complementaria. **No** es un servicio certificado de
 > emergencias ni sustituye al 112 ni a la teleasistencia.
 
-## Estado actual (fase 3: persistencia local)
+## Estado actual (fase 4: base de datos en la nube, solo en local)
 
 | Componente | Estado |
 |---|---|
@@ -20,7 +20,8 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 | Fotos ficticias y vista previa en PNG | Implementado y probado |
 | Biblioteca de fotos: borrado seguro, límite de espacio, conservación, integridad (`library.py`) | Implementado y probado |
 | Esquema v2 con migración transaccional y copia previa; estado de sincronización | Implementado y probado (migración real desde v1; errores de disco simulados) |
-| Supabase, Telegram, botones físicos, panel web | Pendiente (fases 4 a 8) |
+| Esquema de Supabase: tablas, RLS, permisos por columna, bucket privado (`supabase/`) | Implementado y probado en local (pgTAP); **sin proyecto remoto** |
+| Telegram, sincronización, botones físicos, panel web | Pendiente (fases 5 a 8) |
 
 **Nada se ha ejecutado todavía en una Raspberry Pi ni en una pantalla física.**
 La galería se ha probado con el controlador de vídeo vacío de SDL y a
@@ -33,7 +34,9 @@ src/vinculo_frame/          Aplicación local (Python ≥ 3.11)
 src/vinculo_frame/gallery/  Galería: lógica pura + dibujo (Pillow) + ventana (pygame)
 tests/                      Pruebas automatizadas (pytest), sin hardware ni red
 docs/                       Arquitectura, plan, seguridad, pruebas, decisiones, hardware
-.github/workflows/          CI: lint + pruebas en Python 3.11 y 3.13
+supabase/                   Migraciones SQL, pruebas pgTAP y config de la CLI de Supabase
+scripts/test_db.sh          Prueba las migraciones en un PostgreSQL temporal (sin Docker)
+.github/workflows/          CI: lint, pruebas en Python 3.11 y 3.13 y pruebas de la base de datos
 .env.example                Plantilla de configuración con valores ficticios
 ```
 
@@ -48,6 +51,13 @@ SDL_VIDEODRIVER=dummy pytest                 # sin pantalla física
 
 Sin el extra `[display]` el núcleo sigue funcionando y sus pruebas pasan;
 las de la galería se omiten.
+
+Base de datos de Supabase (no se conecta a ningún proyecto remoto):
+
+```bash
+./scripts/test_db.sh                    # requiere postgresql y postgresql-*-pgtap
+supabase db start && supabase test db   # con la CLI oficial y Docker
+```
 
 ## Probar la galería
 

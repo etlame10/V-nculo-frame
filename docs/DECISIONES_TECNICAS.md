@@ -21,6 +21,8 @@ equipo). Las marcadas con ⚠ afectan a seguridad, coste o compatibilidad.
 | D-13 | Migraciones numeradas, transaccionales y con copia previa | Adoptada ⚠ |
 | D-14 | Política de conservación: solo se retiran fotos recuperables | Adoptada ⚠ |
 | D-15 | Estado de sincronización con dos columnas (`remote_id`, `evicted_at`) | Adoptada |
+| D-16 | Pruebas de la base de datos remota: pgTAP con la CLI oficial y con una imitación mínima | Adoptada |
+| D-17 | Permisos por columna además de RLS; altas sensibles solo con `service_role` | Adoptada ⚠ |
 
 ## D-01 Python ≥ 3.11, núcleo sin dependencias
 Raspberry Pi OS Bookworm trae Python 3.11 y Trixie 3.13; CI prueba ambas.
@@ -69,7 +71,8 @@ propio (`SUPABASE_DEVICE_EMAIL`/`PASSWORD`) y RLS lo limita a su `frame_id`.
 
 ## D-07 Storage ⚠
 Bucket privado; acceso mediante URLs firmadas de corta duración o descarga
-autenticada del usuario del marco. Verificar el almacenamiento incluido en el
+autenticada del usuario del marco. Creado en la migración de la fase 4 (solo
+JPEG, PNG y WebP, máximo 10 MB) y probado en local. Verificar el almacenamiento incluido en el
 plan gratuito; si se queda corto, reducir resolución al recibir (fase 5).
 
 ## D-08 Alarma tras la confirmación
@@ -172,3 +175,30 @@ outbox (D-03): borrar una foto con copia remota encola `photo_deleted` en la
 misma transacción. Descartado por ahora: marcas de tiempo de modificación o
 tablas de cambios, que solo harían falta con edición desde varios sitios.
 
+## D-16 Pruebas de la base de datos remota
+- Las migraciones de `supabase/migrations/` se prueban con pgTAP
+  (`supabase/tests/database/`), nunca contra un proyecto real.
+- **Referencia:** `supabase db start` + `supabase test db` con la CLI oficial
+  (job `supabase` de GitHub Actions, Docker).
+- **Rápida y sin Docker:** `scripts/test_db.sh` crea un PostgreSQL temporal,
+  carga `scripts/db/supabase_minimo.sql` (roles, `auth.uid()`, tablas de
+  Storage) y ejecuta las mismas pruebas (job `db`). Se creó porque desde la
+  sesión en la nube no se pueden descargar las imágenes de Supabase.
+- Riesgo: la imitación puede diferir de Supabase real; por eso el job
+  `supabase` es el que decide. Las pruebas de borrado en Storage comprueban
+  la condición de la política y no un `DELETE` directo, que Supabase puede
+  bloquear fuera de su API.
+
+## D-17 Permisos por columna y altas con `service_role` ⚠
+- Además de RLS (qué filas), se retiran los permisos por defecto de Supabase y
+  se conceden solo las columnas necesarias: el marco solo cambia
+  `photos.liked_at`; el administrador crea familiares con `frame_id` y
+  `display_name` y edita `display_name` y `active`; las alertas se crean sin
+  resolver y no se borran.
+- Crear marcos y administradores, escribir `telegram_user_id`, insertar fotos
+  y confirmaciones SOS queda para funciones del servidor con `service_role`
+  (fases 5 y 8). Así un fallo en una política no basta para, por ejemplo,
+  vincular un Telegram ajeno.
+- Los familiares no se borran desde el panel: se desactivan. El borrado real
+  (por ejemplo, por una petición RGPD) queda pendiente de D-12.
+- El marco **no** puede resolver alertas hasta decidir D-08.

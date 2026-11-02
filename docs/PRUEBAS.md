@@ -12,7 +12,14 @@ GitHub Actions (`.github/workflows/tests.yml`) ejecuta lo mismo en cada push
 y pull request, con Python 3.11 y 3.13. Sin el extra `[display]`, las pruebas
 de Pillow y pygame se omiten (`pytest.importorskip`) y el resto pasa.
 
-## Cobertura actual (fases 1 a 3)
+Base de datos remota (fase 4, D-16), sin conectarse a ningún proyecto:
+
+```bash
+./scripts/test_db.sh                 # PostgreSQL temporal + pgTAP (sin Docker; no como root)
+supabase db start && supabase test db   # referencia, con la CLI oficial y Docker
+```
+
+## Cobertura actual (fases 1 a 4)
 
 Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 
@@ -32,6 +39,8 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 | `test_gallery_render.py` | Foto centrada en cuatro resoluciones y orientaciones, laterales desenfocados, texto del pie, pantallas de bienvenida y error, nombre muy largo |
 | `test_gallery_display.py` | Ventana con SDL sin pantalla: bienvenida, fallo de dibujo sin cerrarse, tamaño real, tecla Esc |
 | `test_gallery_app.py` | Fotos ficticias a través de `PhotoLibrary`, idempotencia, vista previa, comandos `demo-photos`, `preview` y `gallery` |
+| `supabase/tests/database/01_esquema.test.sql` | Solo las tablas previstas; RLS en todas; `anon` sin permisos ni políticas; políticas exactas por tabla; permisos por columna; funciones auxiliares `SECURITY DEFINER` y no ejecutables por `anon`; rutas mal formadas → `NULL`; bucket privado con formatos limitados; integridad (remitente y confirmaciones del mismo marco, ruta con el id del marco, hash y formato, foto duplicada, nombre vacío, resolución sin fecha) |
+| `supabase/tests/database/02_rls.test.sql` | Con dos marcos: `anon` no lee ni escribe; usuario sin marco no ve nada; admin A ve y cambia solo lo de A (alta y desactivación de familiares, borrar fotos, resolver alertas firmando con su usuario y una sola vez), no fija `telegram_user_id`, no elige ids, no mueve ni borra familiares, no marca "me gusta"; marco A ve solo lo suyo, crea alertas (reenviar no duplica), marca "me gusta" y nada más; marco B no ve A; Storage: cada uno ve solo `<su marco>/…` |
 | `test_cli.py` | `check` crea el almacenamiento, no muestra secretos y devuelve error con configuración inválida; `storage` (informe, `--deep`, `--repair` y su negativa ante un posible desmontaje), `backup` (también a un destino imposible), `delete-photo` exige `--yes`, `demo-photos --count` fuera de rango, base de datos dañada en todos los comandos sin modificarla |
 
 ## Estrategia por capas
@@ -72,6 +81,19 @@ fallida que dejaba un archivo suelto; errores de disco al liberar espacio
 como `OSError`; lectura fuera de la transacción al borrar; copia previa
 fallida mostrada como "base de datos dañada"; `demo-photos --count 9` con
 traza de Python; `*.bak` y la cuarentena fuera de `data/` sin ignorar en git.
+
+### Fase 4: qué se ha comprobado y cómo
+
+| Comprobación | Resultado |
+|---|---|
+| Migración + 103 pruebas pgTAP en PostgreSQL 16 con la imitación mínima | Pasan |
+| Errores introducidos a propósito (política `using (true)`, sin revocar a `anon`, `UPDATE` completo en `photos`) | Las pruebas fallan en los tres casos |
+| Mismas pruebas con la CLI oficial de Supabase | **Pendiente**: solo en GitHub Actions (job `supabase`) |
+| Proyecto remoto | **No creado** (requiere autorización) |
+
+Fallo encontrado al probar: la prueba de alta de familiares indicaba el `id`,
+que el administrador no puede elegir; se corrigió la prueba (el permiso es el
+correcto) y se añadió una prueba de que no puede elegirlo.
 
 ### Lista para la primera prueba en la Pi (fase 2, pendiente)
 

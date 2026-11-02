@@ -31,3 +31,30 @@ jobs:
         env:
           SDL_VIDEODRIVER: dummy
         run: pytest
+
+  db:
+    # Migraciones y RLS en un PostgreSQL normal con una imitación mínima de
+    # Supabase (scripts/test_db.sh). Rápida y sin Docker.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar pgTAP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16 postgresql-16-pgtap
+      - name: Migraciones y pruebas pgTAP
+        run: ./scripts/test_db.sh
+
+  supabase:
+    # Prueba de referencia: las mismas migraciones y pruebas con la CLI oficial
+    # de Supabase en local (Docker). No se conecta a ningún proyecto remoto.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Base de datos local de Supabase
+        run: supabase db start
+      - name: Pruebas pgTAP
+        run: supabase test db
