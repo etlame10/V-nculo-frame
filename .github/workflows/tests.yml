@@ -57,8 +57,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.6
-      - name: Base de datos local de Supabase
-        run: supabase db start
+      - name: Supabase local (base de datos, API, Storage y Edge Functions)
+        # Lo mismo que arranca scripts/test_functions_e2e.sh; si solo se
+        # arrancara la base de datos, `supabase start` no añadiría el resto.
+        run: supabase start -x studio,imgproxy,realtime,logflare,vector,supavisor
       - name: Pruebas pgTAP
         run: supabase test db
       - name: Webhook de Telegram de extremo a extremo (sin bot real)

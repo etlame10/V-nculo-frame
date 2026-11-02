@@ -9,7 +9,12 @@ set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo"
 
-supabase start -x studio,imgproxy,mailpit,realtime,logflare,vector,supavisor,postgres-meta
+# Si ya hay un Supabase local arrancado solo con la base de datos
+# (`supabase db start`), `supabase start` no arranca el resto: se para antes.
+if ! supabase status -o json 2>/dev/null | jq -e '.API_URL' >/dev/null; then
+    supabase stop --no-backup >/dev/null 2>&1 || true
+fi
+supabase start -x studio,imgproxy,realtime,logflare,vector,supavisor
 
 status="$(supabase status -o json)"
 api_url="$(jq -r '.API_URL' <<<"$status")"
