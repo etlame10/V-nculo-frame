@@ -116,16 +116,33 @@ LocalStore.list_photos ──► Playlist ──► GalleryController ──► 
 - Esquema v2: `photos.remote_id` (sincronización) y `photos.evicted_at`
   (archivo local retirado). Ver D-13 a D-15.
 
-## Flujo de fotografías (previsto)
+## Flujo de fotografías (pasos 1–3 en la fase 5; 4–5 en la fase 6)
+
+```
+Telegram ──POST + secret_token──► Edge Function telegram-webhook (Deno)
+                                     │ handler.ts: ¿secreto? ¿chat privado? ¿familiar activo?
+                                     │ telegram.ts: getFile + descarga (≤ 10 MB)
+                                     │ images.ts: formato real y fuera metadatos (D-18)
+                                     ▼
+                     store.ts (service_role): bucket "photos" + fila photos
+                                     │
+Telegram ◄── respuesta en el cuerpo HTTP (sendMessage) ──┘
+```
 
 1. Un familiar envía una foto al bot de Telegram.
-2. La función del bot comprueba que su `telegram_user_id` está registrado y
-   activo para ese marco; si no, descarta y no responde con datos.
-3. Valida tipo y tamaño, guarda en el bucket privado y crea la fila `photos`.
-4. La Pi sincroniza: descarga, vuelve a validar (`media.save_photo`) y
-   registra en SQLite. La galería solo lee lo local.
+2. La función comprueba que su `telegram_user_id` está vinculado y activo;
+   si no, responde "Este bot es privado y usted no está en la lista blanca."
+   sin descargar nada.
+3. Valida tipo y tamaño, quita metadatos, guarda en el bucket privado y crea
+   la fila `photos` (una por marco del familiar).
+4. La Pi sincroniza: descarga, reduce la resolución, vuelve a validar
+   (`media.save_photo`) y registra en SQLite. La galería solo lee lo local.
 5. Al pulsar "me gusta" se marca `liked_at` localmente y se encola el aviso
    al remitente.
+
+Vinculación: el panel pide `create_link_code(familiar)` → código `XXXX-XXXX`
+de un solo uso (24 h) → el familiar lo envía al bot → `redeem_link_code`
+guarda su `telegram_user_id` (D-19).
 
 ## Esquema remoto (fase 4, probado en local, no aplicado en remoto)
 

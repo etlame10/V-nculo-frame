@@ -10,7 +10,7 @@ equipo). Las marcadas con ⚠ afectan a seguridad, coste o compatibilidad.
 | D-02 | SQLite local como fuente de verdad del marco | Adoptada |
 | D-03 | Patrón outbox para todos los avisos salientes | Adoptada |
 | D-04 | Máquina SOS pura con reloj monotónico inyectado | Adoptada |
-| D-05 | Recepción de Telegram mediante webhook en Supabase Edge Function | Pendiente ⚠ |
+| D-05 | Recepción de Telegram mediante webhook en Supabase Edge Function | Adoptada ⚠ |
 | D-06 | El marco usa un usuario Supabase propio, nunca `service_role` | Adoptada ⚠ |
 | D-07 | Fotografías remotas en bucket privado de Supabase Storage | Provisional ⚠ |
 | D-08 | La alarma local sigue sonando tras la confirmación de un familiar | Pendiente |
@@ -23,6 +23,8 @@ equipo). Las marcadas con ⚠ afectan a seguridad, coste o compatibilidad.
 | D-15 | Estado de sincronización con dos columnas (`remote_id`, `evicted_at`) | Adoptada |
 | D-16 | Pruebas de la base de datos remota: pgTAP con la CLI oficial y con una imitación mínima | Adoptada |
 | D-17 | Permisos por columna además de RLS; altas sensibles solo con `service_role` | Adoptada ⚠ |
+| D-18 | Metadatos fuera en la nube; reducción de resolución en la Pi | Adoptada ⚠ |
+| D-19 | Vinculación de Telegram con códigos de un solo uso | Adoptada ⚠ |
 
 ## D-01 Python ≥ 3.11, núcleo sin dependencias
 Raspberry Pi OS Bookworm trae Python 3.11 y Trixie 3.13; CI prueba ambas.
@@ -61,7 +63,13 @@ duración de la pulsación.
 
 En ambos casos la Pi puede enviar avisos directamente con `sendMessage`
 (el webhook no lo impide), lo que da al SOS un camino con menos saltos.
-**Decisión necesaria antes de la fase 5.**
+
+**Adoptada (02/11/2026, decisión del equipo): webhook.** Implementación:
+`supabase/functions/telegram-webhook/` con `verify_jwt = false` (Telegram no
+envía un JWT) y comprobación del `secret_token` en tiempo constante. Las
+respuestas al remitente van en el cuerpo de la respuesta HTTP, sin llamadas
+extra a la API. Ante un error de red o de Supabase responde 500 para que
+Telegram reintente; las fotos repetidas no se duplican (hash por marco).
 
 ## D-06 Credenciales de Supabase en el marco ⚠
 La clave `service_role` se salta RLS: si alguien roba el marco tendría acceso
@@ -202,3 +210,38 @@ tablas de cambios, que solo harían falta con edición desde varios sitios.
 - Los familiares no se borran desde el panel: se desactivan. El borrado real
   (por ejemplo, por una petición RGPD) queda pendiente de D-12.
 - El marco **no** puede resolver alertas hasta decidir D-08.
+
+## D-18 Metadatos y resolución de las fotos ⚠
+- La Edge Function quita los metadatos **antes de guardar** la foto en la
+  nube: EXIF (ubicación GPS, cámara, fechas), XMP, IPTC y comentarios en
+  JPEG; `eXIf` y textos en PNG; `EXIF` y `XMP` en WebP. No decodifica la
+  imagen: copia solo los bloques necesarios (`images.ts`), así que no pierde
+  calidad y no necesita librerías de imagen en Deno.
+- Se conserva **solo la orientación**, en un EXIF mínimo nuevo, porque la
+  galería la usa para girar la foto. Se conservan el perfil de color ICC y el
+  bloque Adobe de JPEG (necesarios para mostrar bien los colores).
+- Comprobado con JPEG, PNG y WebP generados con Pillow (no fotos reales): sin
+  GPS, misma imagen píxel a píxel tras orientar y misma orientación.
+- Las fotos enviadas como "foto" en Telegram ya llegan recomprimidas y sin
+  EXIF; las enviadas como "archivo" llegan originales, por eso esta limpieza.
+- **Reducir resolución** se hará en la Pi al descargar (fase 6, con Pillow,
+  que ya está en el extra `[display]`): en la nube haría falta decodificar
+  imágenes dentro de la Edge Function, más lento y frágil. Consecuencia: en
+  el bucket se guardan fotos de hasta 10 MB (límite del plan gratuito: 1 GB).
+
+## D-19 Vinculación de Telegram ⚠
+- El administrador pide un código para un familiar (`create_link_code`); se
+  muestra una vez. Formato `XXXX-XXXX` con 31 símbolos sin confusiones
+  (sin 0/O, 1/I/L): unos 40 bits. Caduca a las 24 horas, sirve una vez y
+  pedir otro anula el anterior.
+- Solo se guarda su SHA-256 (`member_link_codes`, sin permisos ni políticas
+  para nadie con sesión). Lo canjea la Edge Function con `service_role`
+  (`redeem_link_code`), en una transacción con bloqueo de fila.
+- Una cuenta de Telegram es un solo familiar por marco: al vincularla a otro
+  familiar del mismo marco, se desvincula del anterior. Puede estar en varios
+  marcos (por ejemplo, abuela y abuelo); sus fotos llegan a todos.
+- Quien escribe sin estar vinculado recibe "Este bot es privado y usted no
+  está en la lista blanca." (decisión del equipo); quien envía un código no
+  válido, que no es válido o ha caducado. Ninguna respuesta revela datos.
+- Pendiente: limitar intentos por persona si se observa abuso (hoy cada
+  intento es un mensaje a Telegram y una consulta).

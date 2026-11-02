@@ -30,8 +30,9 @@
   copia remota, encola su borrado allí. Las copias `*.bak` de la base de datos
   y `data/quarantine/` pueden conservar metadatos o fotos borradas: entran en
   la política de retención pendiente (D-12).
-- Pendiente (fase 5): eliminar metadatos EXIF (puede incluir ubicación GPS)
-  al recibir. La galería ya los usa solo para orientar la foto.
+- Al recibir una foto, la Edge Function quita los metadatos (EXIF con GPS,
+  XMP, IPTC, comentarios) antes de guardarla y conserva solo la orientación
+  (D-18). Las fotos que ya estuvieran en el marco antes no se reescriben.
 
 ## Validación de entradas externas
 
@@ -39,9 +40,18 @@
   WebP); se rechaza el resto (`media.py`). Al mostrarlas, la galería vuelve
   a validar con Pillow: solo esos formatos y un máximo de 40 megapíxeles
   ("bombas de descompresión"); cualquier fallo se muestra como aviso.
-- Telegram (fase 5): solo se aceptan mensajes de `telegram_user_id`
-  registrados y activos; webhook verificado con `secret_token`; los textos
-  se tratan como datos, nunca como comandos privilegiados.
+- Telegram (fase 5, `supabase/functions/telegram-webhook/`):
+  - webhook verificado con `secret_token` en tiempo constante; sin él → 401,
+    y si el secreto no está configurado no se acepta nada;
+  - solo chats privados; grupos, canales, bots y mensajes editados se ignoran;
+  - solo `telegram_user_id` vinculados con un código de un solo uso (D-19) y
+    activos; al resto: "Este bot es privado y usted no está en la lista
+    blanca." y su foto ni se descarga;
+  - descarga limitada a 10 MB aunque Telegram declare otro tamaño; firma real
+    de bytes (JPEG, PNG, WebP); archivos dañados rechazados;
+  - el token del bot solo vive en los secretos de la función; los errores no
+    incluyen la URL de descarga (que lo contiene);
+  - los textos se tratan como datos, nunca como comandos privilegiados.
 - Configuración: rangos validados; `SUPABASE_URL` debe ser `https://`.
 
 ## Superficie expuesta

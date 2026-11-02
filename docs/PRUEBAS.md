@@ -19,7 +19,14 @@ Base de datos remota (fase 4, D-16), sin conectarse a ningún proyecto:
 supabase db start && supabase test db   # referencia, con la CLI oficial y Docker
 ```
 
-## Cobertura actual (fases 1 a 4)
+Bot de Telegram (fase 5), sin bot ni proyecto reales:
+
+```bash
+cd supabase/functions/telegram-webhook && deno fmt --check && deno lint && deno check *.ts && deno test -A
+./scripts/test_functions_e2e.sh      # Supabase local (Docker): store.ts y la función servida
+```
+
+## Cobertura actual (fases 1 a 5)
 
 Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 
@@ -41,6 +48,11 @@ Ninguna prueba necesita red, Telegram, Supabase, hardware ni pantalla.
 | `test_gallery_app.py` | Fotos ficticias a través de `PhotoLibrary`, idempotencia, vista previa, comandos `demo-photos`, `preview` y `gallery` |
 | `supabase/tests/database/01_esquema.test.sql` | Solo las tablas previstas; RLS en todas; `anon` sin permisos ni políticas; políticas exactas por tabla; permisos por columna; funciones auxiliares `SECURITY DEFINER` y no ejecutables por `anon`; rutas mal formadas → `NULL`; bucket privado con formatos limitados; integridad (remitente y confirmaciones del mismo marco, ruta con el id del marco, hash y formato, foto duplicada, nombre vacío, resolución sin fecha) |
 | `supabase/tests/database/02_rls.test.sql` | Con dos marcos: `anon` no lee ni escribe; usuario sin marco no ve nada; admin A ve y cambia solo lo de A (alta y desactivación de familiares, borrar fotos, resolver alertas firmando con su usuario y una sola vez), no fija `telegram_user_id`, no elige ids, no mueve ni borra familiares, no marca "me gusta"; marco A ve solo lo suyo, crea alertas (reenviar no duplica), marca "me gusta" y nada más; marco B no ve A; Storage: cada uno ve solo `<su marco>/…` |
+| `supabase/tests/database/03_vinculacion.test.sql` | Solo el servidor canjea códigos; nadie con sesión lee la tabla; formato `XXXX-XXXX` sin caracteres confusos; caduca en 24 h; solo se guarda el hash; admin de otro marco, familiar desactivado o inexistente y el propio marco no obtienen códigos (mismo error); un uso; minúsculas y espacios aceptados; un código nuevo anula el anterior; una cuenta = un familiar por marco; caducados, de familiares desactivados, vacíos o nulos no vinculan |
+| `supabase/functions/telegram-webhook/handler_test.ts` | Secreto ausente, vacío o incorrecto → 401 sin procesar; secreto sin configurar → 500; solo POST y JSON; grupos, canales, bots y ediciones ignorados; desconocido o desactivado → mensaje de bot privado sin descargar; vinculación con `/start CÓDIGO` o el código solo; código no válido; palabra de 8 letras de un familiar → ayuda; mayor resolución, metadatos fuera y guardado; duplicada; dos marcos; foto como archivo; PDF, GIF, vídeo, voz, archivo falso, vacío o dañado; demasiado grande (declarado o real); fallos de descarga o guardado → 500 |
+| `supabase/functions/telegram-webhook/images_test.ts` | Formato por firma; JPEG sin EXIF/GPS, XMP, IPTC ni comentarios, con orientación (little y big endian), ICC y Adobe conservados, relleno entre segmentos, EXIF dañado, truncados; PNG y WebP sin metadatos, con orientación conservada, tamaños e indicadores correctos, truncados |
+| `supabase/functions/telegram-webhook/telegram_test.ts` | getFile + descarga; tamaño declarado o real mayor que el máximo; errores de red o de Telegram sin el token en el mensaje |
+| `supabase/functions/telegram-webhook/store_integration_test.ts` | Solo con Supabase local (CI): canje de código, miembros activos, foto guardada en bucket y tabla, duplicada, desactivado sin acceso |
 | `test_cli.py` | `check` crea el almacenamiento, no muestra secretos y devuelve error con configuración inválida; `storage` (informe, `--deep`, `--repair` y su negativa ante un posible desmontaje), `backup` (también a un destino imposible), `delete-photo` exige `--yes`, `demo-photos --count` fuera de rango, base de datos dañada en todos los comandos sin modificarla |
 
 ## Estrategia por capas
@@ -94,6 +106,20 @@ traza de Python; `*.bak` y la cuarentena fuera de `data/` sin ignorar en git.
 Fallo encontrado al probar: la prueba de alta de familiares indicaba el `id`,
 que el administrador no puede elegir; se corrigió la prueba (el permiso es el
 correcto) y se añadió una prueba de que no puede elegirlo.
+
+### Fase 5: qué se ha comprobado y cómo
+
+| Comprobación | Resultado |
+|---|---|
+| 38 pruebas de la función con Telegram y Supabase simulados (`deno test`), tipos, lint y formato | Pasan |
+| 129 pruebas pgTAP (incluidos los códigos de vinculación) en PostgreSQL 16 | Pasan |
+| JPEG, PNG y WebP generados con Pillow con GPS, cámara, textos y orientación 6 | Sin metadatos, misma imagen píxel a píxel tras orientar, orientación 6 conservada |
+| `store.ts` contra Supabase local y la función servida por el runtime oficial | **Pendiente**: solo en GitHub Actions |
+| Bot real, mensajes reales, proyecto remoto | **No** (requieren autorización y un bot creado por el equipo) |
+
+Fallos encontrados al probar y corregidos: en PNG y WebP la orientación se
+perdía al quitar el EXIF (la foto se habría visto girada); un familiar que
+escribía una palabra de 8 letras recibía "código no válido".
 
 ### Lista para la primera prueba en la Pi (fase 2, pendiente)
 

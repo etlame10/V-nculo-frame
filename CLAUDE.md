@@ -11,6 +11,7 @@ python -m pip install -e ".[dev,display]"
 ruff check . && ruff format --check .
 SDL_VIDEODRIVER=dummy pytest
 ./scripts/test_db.sh        # migraciones + pgTAP en PostgreSQL temporal (no como root)
+(cd supabase/functions/telegram-webhook && deno fmt --check && deno lint && deno check *.ts && deno test -A)
 ```
 
 Galería: `python -m vinculo_frame demo-photos --with-broken` y después
@@ -28,6 +29,8 @@ probar la pantalla completa con `--max-seconds` y `--screenshot`.
 - Migraciones: añadir un paso nuevo a `storage._MIGRATIONS`; nunca editar uno publicado.
   En Supabase igual: un archivo nuevo en `supabase/migrations/`, con sus pruebas pgTAP.
 - Supabase: RLS en todas las tablas, nada para `anon`, permisos por columna (D-17).
+- Bot: la lógica va en `handler.ts` (pura, con dependencias inyectadas); red y
+  Supabase en `telegram.ts`/`store.ts`. Los errores nunca incluyen el token.
 - Nunca borrar automáticamente fotos sin copia remota, con "me gusta" o recientes (D-14).
 - Nunca: secretos reales, fotografías reales, `service_role` en la Pi o el navegador,
   puertos abiertos en la Pi, migraciones remotas o mensajes reales sin autorización.

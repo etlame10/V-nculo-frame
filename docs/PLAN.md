@@ -94,9 +94,8 @@ desde Claude en la nube.
     con el id de su marco, hash y formato válidos, una foto por hash y marco.
   - ✔ 103 pruebas pgTAP en PostgreSQL 16 con la imitación mínima de Supabase;
     tres errores introducidos a propósito en la migración se detectan.
-  - ✘ Pendiente de comprobar en GitHub Actions: las mismas pruebas con la CLI
-    oficial (`supabase test db`). Desde la sesión en la nube no se pudieron
-    descargar las imágenes de Supabase.
+  - ✔ Las mismas pruebas con la CLI oficial (`supabase test db`) en GitHub
+    Actions (commit `5e570e7`).
 - **No incluido (decisión del equipo):** crear el proyecto remoto, región y
   plazos de conservación (D-12), alta de marcos y administradores desde el
   panel (por ahora solo con `service_role`), resolver alertas desde el marco
@@ -104,21 +103,37 @@ desde Claude en la nube.
 - **HW:** ninguno. **Requiere autorización** para crear el proyecto
   remoto y aplicar migraciones (no se hará sin permiso explícito).
 
-## 5. Telegram y autorización de familiares
+## 5. Telegram y autorización de familiares — *completada en local; sin bot real*
 - **Objetivos:** recibir fotos solo de familiares registrados; vinculación
   segura (código de un solo uso generado desde el panel); respuestas claras
   al remitente; nada de Messenger.
-- **Archivos:** `supabase/functions/telegram-webhook/` o `src/vinculo_frame/telegram/`
-  según D-05; pruebas con respuestas simuladas de la API.
-- **Incluye (movido desde la fase 2):** eliminar EXIF (ubicación GPS) y
-  reducir resolución al recibir cada foto.
-- **Aceptación:** remitente no registrado → rechazado sin almacenar; foto
-  válida → fila + archivo; archivo no imagen o demasiado grande → rechazado;
-  webhook sin `secret_token` correcto → 401; código de vinculación caducado o
-  reutilizado → rechazado.
+- **Decisión (D-05):** webhook en una Edge Function de Supabase.
+- **Archivos:** `supabase/migrations/20261102120000_vinculacion_telegram.sql`
+  (códigos), `supabase/functions/telegram-webhook/` (`handler.ts` lógica,
+  `images.ts` metadatos, `telegram.ts` descargas, `store.ts` Supabase,
+  `index.ts` arranque), `scripts/test_functions_e2e.sh`.
+- **Incluye (movido desde la fase 2):** quitar metadatos (EXIF con GPS, XMP,
+  IPTC, comentarios) al recibir, conservando solo la orientación (D-18). La
+  reducción de resolución pasa a la fase 6, en la Pi (D-18).
+- **Aceptación:**
+  - ✔ Remitente no registrado o desactivado → "Este bot es privado y usted
+    no está en la lista blanca."; su foto ni se descarga.
+  - ✔ Foto válida → archivo en el bucket + fila `photos`; repetida → aviso
+    de duplicada; familiar de dos marcos → llega a ambos.
+  - ✔ No imagen, formato no admitido, dañada o > 10 MB (declarado o real) →
+    rechazada con un mensaje claro.
+  - ✔ Webhook sin `secret_token` correcto → 401; sin secreto configurado →
+    nunca acepta mensajes.
+  - ✔ Código caducado, reutilizado, anulado o de un familiar desactivado →
+    rechazado (pgTAP).
+  - ✔ Metadatos quitados en JPEG, PNG y WebP reales generados con Pillow:
+    sin GPS, misma imagen y misma orientación.
+  - ✘ Pendiente de GitHub Actions: `store.ts` contra Supabase local y la
+    función servida por el runtime oficial (`test_functions_e2e.sh`).
+  - ✘ Sin bot real ni proyecto remoto (requieren autorización).
+- **No incluido:** límite de mensajes por persona, vídeos, fotos en grupos.
 - **HW:** ninguno. **Requiere** crear un bot de pruebas (lo hace el equipo;
   el token nunca se sube al repositorio).
-- **Decisión previa:** D-05.
 
 ## 6. Sincronización y confirmaciones
 - **Objetivos:** `sync` descarga fotos nuevas y rellena `remote_id`

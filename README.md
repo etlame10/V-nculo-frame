@@ -7,7 +7,7 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 > El SOS es una función complementaria. **No** es un servicio certificado de
 > emergencias ni sustituye al 112 ni a la teleasistencia.
 
-## Estado actual (fase 4: base de datos en la nube, solo en local)
+## Estado actual (fase 5: bot de Telegram, solo en local)
 
 | Componente | Estado |
 |---|---|
@@ -21,7 +21,8 @@ uno para decir "la he visto y me gusta" y otro de **SOS** que avisa a la familia
 | Biblioteca de fotos: borrado seguro, límite de espacio, conservación, integridad (`library.py`) | Implementado y probado |
 | Esquema v2 con migración transaccional y copia previa; estado de sincronización | Implementado y probado (migración real desde v1; errores de disco simulados) |
 | Esquema de Supabase: tablas, RLS, permisos por columna, bucket privado (`supabase/`) | Implementado y probado en local (pgTAP); **sin proyecto remoto** |
-| Telegram, sincronización, botones físicos, panel web | Pendiente (fases 5 a 8) |
+| Bot de Telegram: vinculación con código, recepción de fotos solo de familiares, metadatos fuera (`supabase/functions/telegram-webhook/`) | Implementado y probado con Telegram simulado; **sin bot real** |
+| Sincronización, botones físicos, panel web | Pendiente (fases 6 a 8) |
 
 **Nada se ha ejecutado todavía en una Raspberry Pi ni en una pantalla física.**
 La galería se ha probado con el controlador de vídeo vacío de SDL y a
@@ -36,6 +37,7 @@ tests/                      Pruebas automatizadas (pytest), sin hardware ni red
 docs/                       Arquitectura, plan, seguridad, pruebas, decisiones, hardware
 supabase/                   Migraciones SQL, pruebas pgTAP y config de la CLI de Supabase
 scripts/test_db.sh          Prueba las migraciones en un PostgreSQL temporal (sin Docker)
+scripts/test_functions_e2e.sh  Prueba el bot con un Supabase local (Docker), sin bot real
 .github/workflows/          CI: lint, pruebas en Python 3.11 y 3.13 y pruebas de la base de datos
 .env.example                Plantilla de configuración con valores ficticios
 ```
@@ -58,6 +60,18 @@ Base de datos de Supabase (no se conecta a ningún proyecto remoto):
 ./scripts/test_db.sh                    # requiere postgresql y postgresql-*-pgtap
 supabase db start && supabase test db   # con la CLI oficial y Docker
 ```
+
+Bot de Telegram (Edge Function en Deno; no envía mensajes reales):
+
+```bash
+cd supabase/functions/telegram-webhook && deno test -A
+```
+
+Puesta en marcha real (cuando el equipo lo autorice): crear el bot con
+@BotFather, `supabase secrets set` con `TELEGRAM_BOT_TOKEN` y
+`TELEGRAM_WEBHOOK_SECRET` (ver `supabase/functions/.env.example`),
+`supabase functions deploy telegram-webhook` y registrar el webhook con
+`setWebhook` y el mismo `secret_token`.
 
 ## Probar la galería
 

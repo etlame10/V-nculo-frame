@@ -414,3 +414,9 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Webhook del bot de Telegram (fase 5). Telegram no envía un JWT de Supabase,
+# así que la función comprueba la cabecera X-Telegram-Bot-Api-Secret-Token
+# (supabase/functions/telegram-webhook/handler.ts).
+[functions.telegram-webhook]
+verify_jwt = false

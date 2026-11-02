@@ -7,7 +7,7 @@ select no_plan();
 
 select tables_are(
     'public',
-    array['frames', 'frame_admins', 'family_members', 'photos', 'sos_alerts', 'sos_acks'],
+    array['frames', 'frame_admins', 'family_members', 'photos', 'sos_alerts', 'sos_acks', 'member_link_codes'],
     'solo las tablas previstas en public'
 );
 

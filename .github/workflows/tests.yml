@@ -54,7 +54,29 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.122.0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
       - name: Base de datos local de Supabase
         run: supabase db start
       - name: Pruebas pgTAP
         run: supabase test db
+      - name: Webhook de Telegram de extremo a extremo (sin bot real)
+        run: ./scripts/test_functions_e2e.sh
+
+  functions:
+    # Edge Function del bot: formato, lint, tipos y pruebas con dobles.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: supabase/functions/telegram-webhook
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - run: deno fmt --check
+      - run: deno lint
+      - run: deno check *.ts
+      - name: Pruebas
+        run: deno test -A
